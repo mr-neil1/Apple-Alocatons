@@ -15,9 +15,6 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from '../firebase'; // 🔁 ton fichier de config Firebase
 
-const auth = getAuth(firebaseApp);
-const db = getFirestore(firebaseApp);
-
 // Types personnalisés
 interface User {
   id: string;
