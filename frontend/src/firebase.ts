@@ -1,6 +1,7 @@
 // frontend/src/firebase.ts
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyB7Ejaeyve6NrTHwc3kxivPJHFMWkwblZE",
