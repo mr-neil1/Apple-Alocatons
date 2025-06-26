@@ -1,8 +1,9 @@
-// frontend/src/firebase.ts
+// src/firebase.ts
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
+// Configuration obtenue dans Firebase > Paramètres du projet > Config Web
 const firebaseConfig = {
   apiKey: "AIzaSyB7Ejaeyve6NrTHwc3kxivPJHFMWkwblZE",
   authDomain: "apple-allocations.firebaseapp.com",
@@ -13,6 +14,12 @@ const firebaseConfig = {
   measurementId: "G-SNQ5JJ827J"
 };
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app); // Connexion à Firestore
+// Initialisation Firebase
+const firebaseApp = initializeApp(firebaseConfig);
+
+// (optionnel, si tu veux accéder à auth ou firestore ailleurs)
+const auth = getAuth(firebaseApp);
+const db = getFirestore(firebaseApp);
+
+// ⬅️ Tu dois absolument exporter ceci :
+export { firebaseApp, auth, db };

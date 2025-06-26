@@ -13,7 +13,7 @@ import {
   setDoc,
   getDoc
 } from 'firebase/firestore';
-import { firebaseApp } from '../firebase'; // 🔁 ton fichier de config Firebase
+import { auth, db } from '../firebase'; // 🔁 ton fichier de config Firebase
 
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
