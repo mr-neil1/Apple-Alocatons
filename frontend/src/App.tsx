@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+
 import AuthPage from './components/auth/AuthPage';
 import Dashboard from './components/dashboard/Dashboard';
 import DepositPage from './components/deposit/DepositPage';
@@ -10,7 +12,6 @@ import Navigation from './components/layout/Navigation';
 
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
-  const [currentPage, setCurrentPage] = useState('dashboard');
 
   if (loading) {
     return (
@@ -24,33 +25,25 @@ const AppContent: React.FC = () => {
   }
 
   if (!user) {
-    return <AuthPage />;
+    return (
+      <Routes>
+        <Route path="/*" element={<AuthPage />} />
+      </Routes>
+    );
   }
 
-  const renderCurrentPage = () => {
-    switch (currentPage) {
-      case 'dashboard':
-        return <Dashboard onNavigate={setCurrentPage} />;
-      case 'deposit':
-        return <DepositPage onNavigate={setCurrentPage} />;
-      case 'services':
-        return <ServicesPage onNavigate={setCurrentPage} />;
-      case 'referral':
-        return <ReferralPage onNavigate={setCurrentPage} />;
-      case 'withdraw':
-        return <WithdrawPage onNavigate={setCurrentPage} />;
-      case 'history':
-        return <Dashboard onNavigate={setCurrentPage} />; // Placeholder
-      default:
-        return <Dashboard onNavigate={setCurrentPage} />;
-    }
-  };
-
   return (
-    <div className="pb-16">
-      {renderCurrentPage()}
-      <Navigation currentPage={currentPage} onNavigate={setCurrentPage} />
-    </div>
+    <>
+      <Routes>
+        <Route path="/" element={<Dashboard onNavigate={() => {}} />} />
+        <Route path="/deposit" element={<DepositPage onNavigate={() => {}} />} />
+        <Route path="/services" element={<ServicesPage onNavigate={() => {}} />} />
+        <Route path="/referral" element={<ReferralPage onNavigate={() => {}} />} />
+        <Route path="/withdraw" element={<WithdrawPage onNavigate={() => {}} />} />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+      <Navigation currentPage="" onNavigate={() => {}} />
+    </>
   );
 };
 
