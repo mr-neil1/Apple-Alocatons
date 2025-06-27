@@ -7,13 +7,6 @@ import Card from '../ui/Card';
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom'; // ou new URLSearchParams(window.location.search)
 
-const [referralCode, setReferralCode] = useState('');
-const [searchParams] = useSearchParams();
-
-useEffect(() => {
-  const ref = searchParams.get('ref');
-  if (ref) setReferralCode(ref);
-}, []);
 
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -22,9 +15,15 @@ const AuthPage: React.FC = () => {
   const [referralCode, setReferralCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [searchParams] = useSearchParams();
   
   const { login, register, loading } = useAuth();
 
+   useEffect(() => {
+     const ref = searchParams.get('ref');
+     if (ref) setReferralCode(ref);
+   }, []);
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
