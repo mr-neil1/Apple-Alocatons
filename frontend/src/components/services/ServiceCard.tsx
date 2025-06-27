@@ -10,8 +10,7 @@ interface ServiceCardProps {
   loading?: boolean;
 }
 
-
-const ServiceCard: React.FC<ServiceCardProps> = ({ service, onAllocate }) => {
+const ServiceCard: React.FC<ServiceCardProps> = ({ service, onAllocate, loading }) => {
   const formatCurrency = (amount: number) => {
     return `${amount.toLocaleString()} XAF`;
   };
@@ -67,12 +66,12 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onAllocate }) => {
 
         <div className="pt-4 border-t border-gray-700">
           <Button
-            onClick={onAllocate} disabled={loading} 
-             {loading ? 'Traitement...' : 'Allouer'}
+            onClick={onAllocate}
+            disabled={loading}
             className="w-full"
             variant="primary"
           >
-            Allouer Maintenant
+            {loading ? 'Traitement...' : 'Allouer Maintenant'}
           </Button>
         </div>
       </div>

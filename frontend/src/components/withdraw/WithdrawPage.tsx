@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Smartphone, CreditCard, Bitcoin, AlertCircle, CheckCircle } from 'lucide-react';
+import {
+  ArrowLeft, Smartphone, CreditCard, Bitcoin, AlertCircle, CheckCircle
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 
-interface WithdrawPageProps {
-  onNavigate: (page: string) => void;
-}
-
-const WithdrawPage: React.FC<WithdrawPageProps> = ({ onNavigate }) => {
+const WithdrawPage: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+
   const [selectedMethod, setSelectedMethod] = useState<string>('');
   const [amount, setAmount] = useState('');
   const [accountInfo, setAccountInfo] = useState('');
@@ -58,15 +59,13 @@ const WithdrawPage: React.FC<WithdrawPageProps> = ({ onNavigate }) => {
 
   const handleWithdraw = async () => {
     if (!selectedMethod || !amount || !accountInfo) return;
-    
     setLoading(true);
     try {
-      // Simulate API call
+      // Simule une requête API
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Success feedback
+
       alert(`Demande de retrait de ${amount} XAF via ${selectedMethod} soumise avec succès !`);
-      onNavigate('dashboard');
+      navigate('/'); // retourne au tableau de bord
     } catch (error) {
       alert('Erreur lors du retrait');
     } finally {
@@ -74,9 +73,7 @@ const WithdrawPage: React.FC<WithdrawPageProps> = ({ onNavigate }) => {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return `${amount.toLocaleString()} XAF`;
-  };
+  const formatCurrency = (amount: number) => `${amount.toLocaleString()} XAF`;
 
   const selectedMethodData = paymentMethods.find(m => m.id === selectedMethod);
 
@@ -86,7 +83,7 @@ const WithdrawPage: React.FC<WithdrawPageProps> = ({ onNavigate }) => {
         {/* Header */}
         <div className="flex items-center mb-6">
           <Button
-            onClick={() => onNavigate('dashboard')}
+            onClick={() => navigate('/')}
             variant="secondary"
             size="sm"
             icon={ArrowLeft}
@@ -100,7 +97,7 @@ const WithdrawPage: React.FC<WithdrawPageProps> = ({ onNavigate }) => {
           </div>
         </div>
 
-        {/* Balance Info */}
+        {/* Balance */}
         <Card className="mb-6 bg-gradient-to-r from-primary-600 to-primary-700 border-primary-500">
           <div className="text-center">
             <div className="text-sm text-gray-200 mb-2">Solde Disponible</div>
@@ -130,7 +127,6 @@ const WithdrawPage: React.FC<WithdrawPageProps> = ({ onNavigate }) => {
               <div>
                 <div className="text-orange-400 font-medium mb-1">Solde insuffisant</div>
                 <div className="text-sm text-gray-300">
-                  Vous devez avoir au moins {formatCurrency(minWithdraw)} pour effectuer un retrait.
                   Il vous manque {formatCurrency(minWithdraw - (user?.balance || 0))}.
                 </div>
               </div>
@@ -140,10 +136,8 @@ const WithdrawPage: React.FC<WithdrawPageProps> = ({ onNavigate }) => {
 
         {canWithdraw && (
           <>
-            {/* Amount Selection */}
             <Card className="mb-6">
               <h2 className="text-lg font-semibold text-white mb-4">Montant du Retrait</h2>
-              
               <Input
                 type="number"
                 label="Montant (XAF)"
@@ -157,9 +151,7 @@ const WithdrawPage: React.FC<WithdrawPageProps> = ({ onNavigate }) => {
               <div className="mt-4">
                 <p className="text-sm text-gray-400 mb-3">Montants rapides :</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {quickAmounts
-                    .filter(quickAmount => quickAmount <= (user?.balance || 0))
-                    .map((quickAmount) => (
+                  {quickAmounts.filter(a => a <= (user?.balance || 0)).map((quickAmount) => (
                     <button
                       key={quickAmount}
                       onClick={() => setAmount(quickAmount.toString())}
@@ -176,10 +168,8 @@ const WithdrawPage: React.FC<WithdrawPageProps> = ({ onNavigate }) => {
               </div>
             </Card>
 
-            {/* Payment Methods */}
             <Card className="mb-6">
               <h2 className="text-lg font-semibold text-white mb-4">Méthode de Retrait</h2>
-              
               <div className="grid gap-3">
                 {paymentMethods.map((method) => (
                   <div
@@ -210,7 +200,6 @@ const WithdrawPage: React.FC<WithdrawPageProps> = ({ onNavigate }) => {
               </div>
             </Card>
 
-            {/* Account Info */}
             {selectedMethod && (
               <Card className="mb-6">
                 <Input
@@ -224,7 +213,6 @@ const WithdrawPage: React.FC<WithdrawPageProps> = ({ onNavigate }) => {
               </Card>
             )}
 
-            {/* Summary */}
             {amount && selectedMethod && accountInfo && (
               <Card className="mb-6 bg-gray-750 border-primary-500/30">
                 <h3 className="text-lg font-semibold text-white mb-3">Résumé du Retrait</h3>
@@ -256,7 +244,6 @@ const WithdrawPage: React.FC<WithdrawPageProps> = ({ onNavigate }) => {
               </Card>
             )}
 
-            {/* Submit Button */}
             <Button
               onClick={handleWithdraw}
               className="w-full"
@@ -269,7 +256,6 @@ const WithdrawPage: React.FC<WithdrawPageProps> = ({ onNavigate }) => {
           </>
         )}
 
-        {/* Info */}
         <div className="mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
           <div className="flex items-start">
             <div className="text-blue-400 mr-3 mt-1">ℹ️</div>
@@ -279,7 +265,6 @@ const WithdrawPage: React.FC<WithdrawPageProps> = ({ onNavigate }) => {
                 <p>• Les retraits sont traités dans les 24-48h ouvrables</p>
                 <p>• Frais de traitement: 2% du montant</p>
                 <p>• Montant minimum: {formatCurrency(minWithdraw)}</p>
-                <p>• Vérifiez vos informations de compte avant confirmation</p>
               </div>
             </div>
           </div>

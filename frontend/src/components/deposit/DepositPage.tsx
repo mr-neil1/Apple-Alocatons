@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Smartphone, CreditCard, Bitcoin, Wallet } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 
-interface DepositPageProps {
-  onNavigate: (page: string) => void;
-}
+const DepositPage: React.FC = () => {
+  const navigate = useNavigate();
 
-const DepositPage: React.FC<DepositPageProps> = ({ onNavigate }) => {
   const [selectedMethod, setSelectedMethod] = useState<string>('');
   const [amount, setAmount] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -49,15 +48,14 @@ const DepositPage: React.FC<DepositPageProps> = ({ onNavigate }) => {
 
   const handleDeposit = async () => {
     if (!selectedMethod || !amount) return;
-    
+
     setLoading(true);
     try {
-      // Simulate API call
+      // Simuler une requête API
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Success feedback
+
       alert(`Dépôt de ${amount} XAF via ${selectedMethod} initié avec succès !`);
-      onNavigate('dashboard');
+      navigate('/');
     } catch (error) {
       alert('Erreur lors du dépôt');
     } finally {
@@ -71,7 +69,7 @@ const DepositPage: React.FC<DepositPageProps> = ({ onNavigate }) => {
         {/* Header */}
         <div className="flex items-center mb-6">
           <Button
-            onClick={() => onNavigate('dashboard')}
+            onClick={() => navigate('/')}
             variant="secondary"
             size="sm"
             icon={ArrowLeft}
@@ -88,7 +86,6 @@ const DepositPage: React.FC<DepositPageProps> = ({ onNavigate }) => {
         {/* Amount Selection */}
         <Card className="mb-6">
           <h2 className="text-lg font-semibold text-white mb-4">Montant du Dépôt</h2>
-          
           <Input
             type="number"
             label="Montant (XAF)"
@@ -121,7 +118,6 @@ const DepositPage: React.FC<DepositPageProps> = ({ onNavigate }) => {
         {/* Payment Methods */}
         <Card className="mb-6">
           <h2 className="text-lg font-semibold text-white mb-4">Méthode de Paiement</h2>
-          
           <div className="grid gap-3">
             {paymentMethods.map((method) => (
               <div
@@ -152,7 +148,7 @@ const DepositPage: React.FC<DepositPageProps> = ({ onNavigate }) => {
           </div>
         </Card>
 
-        {/* Phone Number for Mobile Money */}
+        {/* Phone Number */}
         {(selectedMethod === 'mtn' || selectedMethod === 'orange') && (
           <Card className="mb-6">
             <Input
@@ -200,12 +196,12 @@ const DepositPage: React.FC<DepositPageProps> = ({ onNavigate }) => {
           className="w-full"
           size="lg"
           loading={loading}
-          disabled={!amount || !selectedMethod || (selectedMethod === 'mtn' || selectedMethod === 'orange') && !phoneNumber}
+          disabled={!amount || !selectedMethod || ((selectedMethod === 'mtn' || selectedMethod === 'orange') && !phoneNumber)}
         >
           Confirmer le Dépôt
         </Button>
 
-        {/* Info */}
+        {/* Info Box */}
         <div className="mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
           <div className="flex items-start">
             <div className="text-blue-400 mr-3 mt-1">ℹ️</div>

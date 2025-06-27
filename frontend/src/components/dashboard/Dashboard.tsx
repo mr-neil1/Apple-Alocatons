@@ -10,20 +10,18 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import StatsCard from './StatsCard';
 
-interface DashboardProps {
-  onNavigate: (page: string) => void;
-}
-
-const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
+const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [showBalance, setShowBalance] = useState(true);
 
-  // Mock data - would come from API
+  // Données fictives
   const stats = {
     dailyEarnings: 250,
     totalEarnings: 15750,
@@ -37,9 +35,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     { id: '3', type: 'deposit', amount: 5000, description: 'Dépôt MTN MoMo', date: new Date() },
   ];
 
-  const formatCurrency = (amount: number) => {
-    return `${amount.toLocaleString()} XAF`;
-  };
+  const formatCurrency = (amount: number) => `${amount.toLocaleString()} XAF`;
 
   return (
     <div className="min-h-screen bg-gray-900 p-4">
@@ -52,7 +48,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           <p className="text-gray-400">Voici un aperçu de votre portefeuille</p>
         </div>
 
-        {/* Balance Card */}
+        {/* Solde */}
         <Card className="mb-8 bg-gradient-to-r from-primary-600 to-primary-700 border-primary-500">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
@@ -79,7 +75,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <Button
-              onClick={() => onNavigate('deposit')}
+              onClick={() => navigate('/deposit')}
               variant="secondary"
               className="bg-white/10 hover:bg-white/20 border-white/20"
               icon={Plus}
@@ -87,7 +83,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               Dépôt
             </Button>
             <Button
-              onClick={() => onNavigate('withdraw')}
+              onClick={() => navigate('/withdraw')}
               variant="secondary"
               className="bg-white/10 hover:bg-white/20 border-white/20"
               icon={ArrowUpRight}
@@ -97,7 +93,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
         </Card>
 
-        {/* Stats Grid */}
+        {/* Statistiques */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatsCard
             title="Revenus/Jour"
@@ -125,12 +121,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           />
         </div>
 
-        {/* Quick Actions */}
+        {/* Actions rapides */}
         <Card className="mb-8">
           <h3 className="text-lg font-semibold text-white mb-4">Actions Rapides</h3>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Button
-              onClick={() => onNavigate('services')}
+              onClick={() => navigate('/services')}
               variant="secondary"
               className="flex-col h-20"
               icon={Gift}
@@ -138,7 +134,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <span className="text-xs mt-1">Allouer</span>
             </Button>
             <Button
-              onClick={() => onNavigate('referral')}
+              onClick={() => navigate('/referral')}
               variant="secondary"
               className="flex-col h-20"
               icon={Users}
@@ -146,7 +142,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <span className="text-xs mt-1">Mon Équipe</span>
             </Button>
             <Button
-              onClick={() => onNavigate('allocations')}
+              onClick={() => navigate('/allocations')}
               variant="secondary"
               className="flex-col h-20"
               icon={TrendingUp}
@@ -154,7 +150,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <span className="text-xs mt-1">Mes Allocations</span>
             </Button>
             <Button
-              onClick={() => onNavigate('history')}
+              onClick={() => navigate('/history')}
               variant="secondary"
               className="flex-col h-20"
               icon={ArrowDownLeft}
@@ -164,12 +160,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
         </Card>
 
-        {/* Recent Transactions */}
+        {/* Transactions */}
         <Card>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white">Transactions Récentes</h3>
             <Button
-              onClick={() => onNavigate('history')}
+              onClick={() => navigate('/history')}
               variant="secondary"
               size="sm"
             >

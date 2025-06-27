@@ -3,6 +3,7 @@ import { ArrowLeft, Search, TrendingUp, Shield, Zap, Globe } from 'lucide-react'
 import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../firebase';
+import { useNavigate } from 'react-router-dom';
 
 import Card from '../ui/Card';
 import Button from '../ui/Button';
@@ -10,12 +11,9 @@ import Input from '../ui/Input';
 import ServiceCard from './ServiceCard';
 import { Service } from '../../types';
 
-interface ServicesPageProps {
-  onNavigate: (page: string) => void;
-}
-
-const ServicesPage: React.FC<ServicesPageProps> = ({ onNavigate }) => {
+const ServicesPage: React.FC = () => {
   const { user, setUser } = useAuth();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [loadingId, setLoadingId] = useState('');
@@ -32,7 +30,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ onNavigate }) => {
 
   const filteredServices = services.filter(service => {
     const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          service.description.toLowerCase().includes(searchTerm.toLowerCase());
+      service.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || service.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -50,13 +48,9 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ onNavigate }) => {
     const newBalance = user.balance - service.price;
 
     try {
-      // 🔁 1. MAJ du solde utilisateur
       await updateDoc(doc(db, 'users', user.id), { balance: newBalance });
-
-      // 🔁 2. MAJ du contexte local
       setUser({ ...user, balance: newBalance });
 
-      // ✅ 3. Stocker l’allocation
       await addDoc(collection(db, 'allocations'), {
         userId: user.id,
         serviceId: service.id,
@@ -77,11 +71,10 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ onNavigate }) => {
   return (
     <div className="min-h-screen bg-gray-900 p-4">
       <div className="max-w-6xl mx-auto">
-
         {/* Header */}
         <div className="flex items-center mb-6">
           <Button
-            onClick={() => onNavigate('dashboard')}
+            onClick={() => navigate('/')}
             variant="secondary"
             size="sm"
             icon={ArrowLeft}
@@ -95,7 +88,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ onNavigate }) => {
           </div>
         </div>
 
-        {/* Search and Filters */}
+        {/* Search + Filters */}
         <div className="mb-6 space-y-4">
           <Input
             type="text"
@@ -168,3 +161,4 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ onNavigate }) => {
 };
 
 export default ServicesPage;
+
