@@ -48,7 +48,7 @@ const ReferralPage: React.FC<ReferralPageProps> = ({ onNavigate }) => {
     },
   ];
 
-  const referralLink = `${window.location.origin}/signup?ref=${user?.referralCode}`;
+  const referralLink = `${window.location.origin}/?ref=${user?.referralCode}`;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(referralLink);
