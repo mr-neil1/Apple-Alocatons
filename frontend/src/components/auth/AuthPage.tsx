@@ -4,6 +4,16 @@ import { useAuth } from '../../contexts/AuthContext';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Card from '../ui/Card';
+import { useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom'; // ou new URLSearchParams(window.location.search)
+
+const [referralCode, setReferralCode] = useState('');
+const [searchParams] = useSearchParams();
+
+useEffect(() => {
+  const ref = searchParams.get('ref');
+  if (ref) setReferralCode(ref);
+}, []);
 
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
