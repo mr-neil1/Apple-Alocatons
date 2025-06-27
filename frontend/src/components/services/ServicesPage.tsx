@@ -1,76 +1,27 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Search, TrendingUp, Shield, Zap, Globe } from 'lucide-react';
-import { Service } from '../../types';
+import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { useAuth } from '../../contexts/AuthContext';
+import { db } from '../../firebase';
+
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import ServiceCard from './ServiceCard';
+import { Service } from '../../types';
 
 interface ServicesPageProps {
   onNavigate: (page: string) => void;
 }
 
 const ServicesPage: React.FC<ServicesPageProps> = ({ onNavigate }) => {
+  const { user, setUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [loadingId, setLoadingId] = useState('');
+  const [message, setMessage] = useState('');
 
-  // Mock services data
-  const services: Service[] = [
-    {
-      id: '1',
-      name: 'Trading Bot Pro',
-      description: 'Bot de trading automatisé avec IA avancée',
-      image: 'https://images.pexels.com/photos/7567486/pexels-photo-7567486.jpeg?auto=compress&cs=tinysrgb&w=300',
-      price: 2500,
-      dailyReturn: 125,
-      category: 'trading'
-    },
-    {
-      id: '2',
-      name: 'Cloud Mining',
-      description: 'Minage de cryptomonnaies dans le cloud',
-      image: 'https://images.pexels.com/photos/844124/pexels-photo-844124.jpeg?auto=compress&cs=tinysrgb&w=300',
-      price: 5000,
-      dailyReturn: 200,
-      category: 'crypto'
-    },
-    {
-      id: '3',
-      name: 'Forex Premium',
-      description: 'Signaux forex avec 95% de précision',
-      image: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=300',
-      price: 3500,
-      dailyReturn: 175,
-      category: 'forex'
-    },
-    {
-      id: '4',
-      name: 'E-commerce Affiliate',
-      description: 'Réseau d\'affiliation e-commerce automatisé',
-      image: 'https://images.pexels.com/photos/230544/pexels-photo-230544.jpeg?auto=compress&cs=tinysrgb&w=300',
-      price: 1500,
-      dailyReturn: 80,
-      category: 'affiliate'
-    },
-    {
-      id: '5',
-      name: 'Real Estate Fund',
-      description: 'Investissement immobilier fractionné',
-      image: 'https://images.pexels.com/photos/280229/pexels-photo-280229.jpeg?auto=compress&cs=tinysrgb&w=300',
-      price: 10000,
-      dailyReturn: 400,
-      category: 'realestate'
-    },
-    {
-      id: '6',
-      name: 'Tech Startup Fund',
-      description: 'Portefeuille de startups technologiques',
-      image: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=300',
-      price: 7500,
-      dailyReturn: 300,
-      category: 'startup'
-    }
-  ];
+  const services: Service[] = [/* ... tes services ... */];
 
   const categories = [
     { id: 'all', name: 'Tous', icon: Globe },
@@ -81,14 +32,52 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ onNavigate }) => {
 
   const filteredServices = services.filter(service => {
     const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         service.description.toLowerCase().includes(searchTerm.toLowerCase());
+                          service.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || service.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
+  const handleAllocation = async (service: Service) => {
+    if (!user) return;
+    if (user.balance < service.price) {
+      setMessage("❌ Solde insuffisant.");
+      return;
+    }
+
+    setLoadingId(service.id);
+    setMessage('');
+
+    const newBalance = user.balance - service.price;
+
+    try {
+      // 🔁 1. MAJ du solde utilisateur
+      await updateDoc(doc(db, 'users', user.id), { balance: newBalance });
+
+      // 🔁 2. MAJ du contexte local
+      setUser({ ...user, balance: newBalance });
+
+      // ✅ 3. Stocker l’allocation
+      await addDoc(collection(db, 'allocations'), {
+        userId: user.id,
+        serviceId: service.id,
+        serviceName: service.name,
+        investedAmount: service.price,
+        dailyReturn: service.dailyReturn,
+        createdAt: serverTimestamp(),
+      });
+
+      setMessage(`✅ Vous avez investi dans "${service.name}"`);
+    } catch (err) {
+      setMessage("❌ Une erreur est survenue.");
+    } finally {
+      setLoadingId('');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 p-4">
       <div className="max-w-6xl mx-auto">
+
         {/* Header */}
         <div className="flex items-center mb-6">
           <Button
@@ -115,7 +104,6 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ onNavigate }) => {
             onChange={(e) => setSearchTerm(e.target.value)}
             icon={Search}
           />
-
           <div className="flex flex-wrap gap-2">
             {categories.map((category) => (
               <button
@@ -140,18 +128,22 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ onNavigate }) => {
             <ServiceCard
               key={service.id}
               service={service}
-              onAllocate={() => {
-                // Handle allocation
-                alert(`Allocation de ${service.name} en cours...`);
-              }}
+              onAllocate={() => handleAllocation(service)}
+              loading={loadingId === service.id}
             />
           ))}
         </div>
 
         {filteredServices.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-gray-400 text-lg mb-2">Aucun service trouvé</div>
-            <div className="text-gray-500">Essayez de modifier vos critères de recherche</div>
+          <div className="text-center py-12 text-gray-400">
+            Aucun service trouvé.
+          </div>
+        )}
+
+        {/* Message */}
+        {message && (
+          <div className="mt-6 text-center text-yellow-400 font-medium">
+            {message}
           </div>
         )}
 

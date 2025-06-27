@@ -1,3 +1,4 @@
+// src/App.tsx
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -35,14 +36,15 @@ const AppContent: React.FC = () => {
   return (
     <>
       <Routes>
-        <Route path="/" element={<Dashboard onNavigate={() => {}} />} />
-        <Route path="/deposit" element={<DepositPage onNavigate={() => {}} />} />
-        <Route path="/services" element={<ServicesPage onNavigate={() => {}} />} />
-        <Route path="/referral" element={<ReferralPage onNavigate={() => {}} />} />
-        <Route path="/withdraw" element={<WithdrawPage onNavigate={() => {}} />} />
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/deposit" element={<DepositPage />} />
+        <Route path="/services" element={<ServicesPage />} />
+        <Route path="/referral" element={<ReferralPage />} />
+        <Route path="/withdraw" element={<WithdrawPage />} />
+        <Route path="/history" element={<Dashboard />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-      <Navigation currentPage="" onNavigate={() => {}} />
+      <Navigation />
     </>
   );
 };

@@ -1,30 +1,30 @@
+// src/components/layout/Navigation.tsx
 import React from 'react';
-import { 
-  Home, 
-  Plus, 
-  Gift, 
-  Users, 
-  History, 
-  Settings, 
-  LogOut 
+import {
+  Home,
+  Plus,
+  Gift,
+  Users,
+  History,
+  LogOut
 } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
-interface NavigationProps {
-  currentPage: string;
-  onNavigate: (page: string) => void;
-}
-
-const Navigation: React.FC<NavigationProps> = ({ currentPage, onNavigate }) => {
+const Navigation: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { logout } = useAuth();
 
   const navItems = [
-    { id: 'dashboard', label: 'Accueil', icon: Home },
-    { id: 'deposit', label: 'Dépôt', icon: Plus },
-    { id: 'services', label: 'Services', icon: Gift },
-    { id: 'referral', label: 'Équipe', icon: Users },
-    { id: 'history', label: 'Historique', icon: History },
+    { path: '/', label: 'Accueil', icon: Home },
+    { path: '/deposit', label: 'Dépôt', icon: Plus },
+    { path: '/services', label: 'Services', icon: Gift },
+    { path: '/referral', label: 'Équipe', icon: Users },
+    { path: '/history', label: 'Historique', icon: History },
   ];
+
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 z-50">
@@ -32,10 +32,10 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onNavigate }) => {
         <div className="flex items-center justify-around py-2">
           {navItems.map((item) => (
             <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
+              key={item.path}
+              onClick={() => navigate(item.path)}
               className={`flex flex-col items-center py-2 px-3 rounded-lg transition-all ${
-                currentPage === item.id
+                isActive(item.path)
                   ? 'text-primary-400 bg-primary-500/10'
                   : 'text-gray-400 hover:text-white'
               }`}
@@ -44,7 +44,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onNavigate }) => {
               <span className="text-xs">{item.label}</span>
             </button>
           ))}
-          
+
           <button
             onClick={logout}
             className="flex flex-col items-center py-2 px-3 rounded-lg text-gray-400 hover:text-red-400 transition-colors"

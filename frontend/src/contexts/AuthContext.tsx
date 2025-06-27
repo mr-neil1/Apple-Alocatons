@@ -18,6 +18,7 @@ interface AuthContextType {
   register: (email: string, password: string, referralCode?: string) => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -92,7 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const uid = userCred.user.uid;
       const userDoc = await getDoc(doc(db, 'users', uid));
       const data = userDoc.data();
-
+   
       if (userDoc.exists()) {
         setUser({
           uid,
@@ -116,7 +117,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider const value={{ user, login, register, logout, loading,setUser, }}>
       {children}
     </AuthContext.Provider>
   );

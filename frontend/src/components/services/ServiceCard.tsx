@@ -7,7 +7,9 @@ import Button from '../ui/Button';
 interface ServiceCardProps {
   service: Service;
   onAllocate: () => void;
+  loading?: boolean;
 }
+
 
 const ServiceCard: React.FC<ServiceCardProps> = ({ service, onAllocate }) => {
   const formatCurrency = (amount: number) => {
@@ -65,7 +67,8 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onAllocate }) => {
 
         <div className="pt-4 border-t border-gray-700">
           <Button
-            onClick={onAllocate}
+            onClick={onAllocate} disabled={loading} 
+             {loading ? 'Traitement...' : 'Allouer'}
             className="w-full"
             variant="primary"
           >
