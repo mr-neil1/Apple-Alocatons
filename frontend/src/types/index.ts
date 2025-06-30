@@ -39,6 +39,7 @@ export interface Allocation {
   totalEarned: number;
   createdAt: Timestamp;
   lastPayoutAt: Timestamp;
+  status: string;
 }
 
 export interface Referral {
