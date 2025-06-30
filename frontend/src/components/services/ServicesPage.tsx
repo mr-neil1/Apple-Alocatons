@@ -298,10 +298,7 @@ const ServicesPage: React.FC = () => {
   const filteredServices = services.filter(service => {
     const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       service.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || service.category === selectedCategory;    
-    console.log('Services chargés :', services);
-    console.log('Services filtrés :', filteredServices);
-
+    const matchesCategory = selectedCategory === 'all' || service.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -397,7 +394,7 @@ const ServicesPage: React.FC = () => {
           ))}
         </div>
 
-        {filteredServices.length === 0 && (
+        {filteredServices.length > 0 && (
           <div className="text-center py-12 text-gray-400">
             Aucun service trouvé.
           </div>

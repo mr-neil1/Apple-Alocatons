@@ -26,6 +26,7 @@ export interface Service {
   price: number;
   dailyReturn: number;
   category: string;
+  duration: number;
 }
 
 export interface Allocation {
