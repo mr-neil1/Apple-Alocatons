@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, Calendar, DollarSign } from 'lucide-react';
+import { TrendingUp, Calendar, DollarSign, Clock } from 'lucide-react';
 import { Service } from '../../types';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
@@ -16,8 +16,10 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onAllocate, loading 
   };
 
   const calculateROI = () => {
-    return ((service.dailyReturn * 30) / service.price * 100).toFixed(1);
+    return ((service.dailyReturn * service.duration) / service.price * 100).toFixed(1);
   };
+
+  const totalReturn = service.dailyReturn * service.duration;
 
   return (
     <Card hover className="overflow-hidden">
@@ -28,7 +30,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onAllocate, loading 
           className="w-full h-48 object-cover rounded-lg mb-4"
         />
         <div className="absolute top-2 right-2 bg-primary-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-          {calculateROI()}% ROI/mois
+          {calculateROI()}% ROI / {service.duration}j
         </div>
       </div>
 
@@ -50,17 +52,25 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onAllocate, loading 
           <div className="flex items-center justify-between">
             <div className="flex items-center text-gray-400">
               <Calendar className="w-4 h-4 mr-2" />
-              <span className="text-sm">Revenus/jour</span>
+              <span className="text-sm">Revenus / jour</span>
             </div>
             <span className="text-primary-400 font-semibold">{formatCurrency(service.dailyReturn)}</span>
           </div>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center text-gray-400">
-              <TrendingUp className="w-4 h-4 mr-2" />
-              <span className="text-sm">Retour/mois</span>
+              <Clock className="w-4 h-4 mr-2" />
+              <span className="text-sm">Durée</span>
             </div>
-            <span className="text-green-400 font-semibold">{formatCurrency(service.dailyReturn * 30)}</span>
+            <span className="text-gray-300 font-semibold">{service.duration} jours</span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center text-gray-400">
+              <TrendingUp className="w-4 h-4 mr-2" />
+              <span className="text-sm">Revenus totaux</span>
+            </div>
+            <span className="text-green-400 font-semibold">{formatCurrency(totalReturn)}</span>
           </div>
         </div>
 
@@ -71,7 +81,9 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onAllocate, loading 
             className="w-full"
             variant="primary"
           >
-            {loading ? 'Traitement...' : 'Allouer Maintenant'}
+            {loading
+              ? 'Traitement...'
+              : `Allouer ${formatCurrency(service.price)} pour ${service.duration}j`}
           </Button>
         </div>
       </div>
