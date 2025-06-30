@@ -17,7 +17,7 @@ const WithdrawPage: React.FC = () => {
   const [accountInfo, setAccountInfo] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const minWithdraw = 8000;
+  const minWithdraw = 500;
   const canWithdraw = (user?.balance || 0) >= minWithdraw;
 
   const paymentMethods = [
@@ -66,7 +66,8 @@ const WithdrawPage: React.FC = () => {
 
       alert(`Demande de retrait de ${amount} XAF via ${selectedMethod} soumise avec succès !`);
       navigate('/'); // retourne au tableau de bord
-    } catch (error) {
+    } catch (err: unknown) {
+      console.error(err);
       alert('Erreur lors du retrait');
     } finally {
       setLoading(false);
