@@ -317,11 +317,11 @@ const ServicesPage: React.FC = () => {
     const newBalance = user.balance - service.price;
 
     try {
-      await updateDoc(doc(db, 'users', user.id), { balance: newBalance });
+      await updateDoc(doc(db, 'users', user.uid), { balance: newBalance });
       setUser({ ...user, balance: newBalance });
 
       await addDoc(collection(db, 'allocations'), {
-        userId: user.id,
+        userId: user.uid,
         serviceId: service.id,
         serviceName: service.name,
         investedAmount: service.price,
@@ -330,7 +330,8 @@ const ServicesPage: React.FC = () => {
       });
 
       setMessage(`✅ Vous avez investi dans "${service.name}"`);
-    } catch (err) {
+    } catch (err: unknown) {
+      console.error(err);
       setMessage("❌ Une erreur est survenue.");
     } finally {
       setLoadingId('');
