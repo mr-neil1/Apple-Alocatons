@@ -43,7 +43,7 @@ const ReferralPage: React.FC = () => {
     const q = query(collection(db, 'users'), where('referredBy', '==', user.referralCode));
     const userSnaps = await getDocs(q);
     const bonuses = await getDocs(
-      query(collection(db, 'referralBonuses'), where('userId', '==', user.id))
+      query(collection(db, 'referralBonuses'), where('userId', '==', user.uid))
     );
 
     const claimedMap = new Map();
@@ -96,13 +96,13 @@ const ReferralPage: React.FC = () => {
     try {
       for (const r of batch) {
         await addDoc(collection(db, 'referralBonuses'), {
-          userId: user.id,
+          userId: user.uid,
           referralId: r.id,
           bonusAmount: r.newBonus,
           claimedAt: serverTimestamp(),
         });
       }
-      await updateDoc(doc(db, 'users', user.id), {
+      await updateDoc(doc(db, 'users', user.uid), {
         balance: user.balance + totalBonus,
       });
       setUser({ ...user, balance: user.balance + totalBonus });
