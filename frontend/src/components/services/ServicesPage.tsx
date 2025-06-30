@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { 
+  ArrowLeft
   Globe,
   BookOpen,
   HeartPulse,
@@ -297,7 +298,10 @@ const ServicesPage: React.FC = () => {
   const filteredServices = services.filter(service => {
     const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       service.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || service.category === selectedCategory;
+    const matchesCategory = selectedCategory === 'all' || service.category === selectedCategory;    
+    console.log('Services chargés :', services);
+    console.log('Services filtrés :', filteredServices);
+
     return matchesSearch && matchesCategory;
   });
 
