@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Wallet, 
   TrendingUp, 
@@ -12,6 +12,9 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { db } from '../../firebase';
+
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import StatsCard from './StatsCard';
@@ -20,8 +23,8 @@ const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [showBalance, setShowBalance] = useState(true);
+  const [allocations, setAllocations] = useState<any[]>([]);
 
-  // Données fictives
   const stats = {
     dailyEarnings: 250,
     totalEarnings: 15750,
@@ -29,18 +32,34 @@ const Dashboard: React.FC = () => {
     activeReferrals: 3,
   };
 
-  const recentTransactions = [
-    { id: '1', type: 'earning', amount: 125, description: 'Revenus Services Cloud', date: new Date() },
-    { id: '2', type: 'allocation', amount: -2500, description: 'Allocation Trading Bot', date: new Date() },
-    { id: '3', type: 'deposit', amount: 5000, description: 'Dépôt MTN MoMo', date: new Date() },
-  ];
+  useEffect(() => {
+    const fetchAllocations = async () => {
+      if (!user?.uid) return;
+
+      const q = query(
+        collection(db, 'allocations'),
+        where('userId', '==', user.uid),
+        orderBy('createdAt', 'desc'),
+        limit(3)
+      );
+
+      const snapshot = await getDocs(q);
+      const list = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setAllocations(list);
+    };
+
+    fetchAllocations();
+  }, [user]);
 
   const formatCurrency = (amount: number) => `${amount.toLocaleString()} XAF`;
 
   return (
     <div className="min-h-screen bg-gray-900 p-4">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-white mb-2">
             Bonjour, {user?.email?.split('@')[0]} 👋
@@ -48,7 +67,7 @@ const Dashboard: React.FC = () => {
           <p className="text-gray-400">Voici un aperçu de votre portefeuille</p>
         </div>
 
-        {/* Solde */}
+        {/* Solde principal */}
         <Card className="mb-8 bg-gradient-to-r from-primary-600 to-primary-700 border-primary-500">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
@@ -160,47 +179,51 @@ const Dashboard: React.FC = () => {
           </div>
         </Card>
 
-        {/* Transactions */}
+        {/* Allocations récentes */}
         <Card>
-  <div className="flex items-center justify-between mb-4">
-    <h3 className="text-lg font-semibold text-white">Mes dernières allocations</h3>
-    <Button
-      onClick={() => navigate('/history')}
-      variant="secondary"
-      size="sm"
-    >
-      Voir tout
-    </Button>
-  </div>
-
-  <div className="space-y-3">
-    {allocations.slice(0, 3).map((a) => (
-      <div
-        key={a.id}
-        className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg"
-      >
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center mr-3">
-            <TrendingUp className="w-4 h-4 text-green-400" />
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Mes dernières allocations</h3>
+            <Button
+              onClick={() => navigate('/history')}
+              variant="secondary"
+              size="sm"
+            >
+              Voir tout
+            </Button>
           </div>
-          <div>
-            <div className="text-white font-medium">{a.serviceName}</div>
-            <div className="text-gray-400 text-sm">
-              {(a.createdAt?.toDate?.() ?? new Date()).toLocaleDateString()}
-            </div>
-          </div>
-        </div>
-        <div className="text-green-400 font-semibold">
-          +{a.investedAmount.toLocaleString()} XAF
-        </div>
-      </div>
-    ))}
-  </div>
-</Card>
 
+          <div className="space-y-3">
+            {allocations.length === 0 ? (
+              <p className="text-gray-400 text-sm">Aucune allocation trouvée.</p>
+            ) : (
+              allocations.map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg"
+                >
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center mr-3">
+                      <TrendingUp className="w-4 h-4 text-green-400" />
+                    </div>
+                    <div>
+                      <div className="text-white font-medium">{a.serviceName}</div>
+                      <div className="text-gray-400 text-sm">
+                        {(a.createdAt?.toDate?.() ?? new Date()).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-green-400 font-semibold">
+                    +{a.investedAmount?.toLocaleString()} XAF
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
       </div>
     </div>
   );
 };
 
 export default Dashboard;
+
