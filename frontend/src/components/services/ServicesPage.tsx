@@ -14,7 +14,6 @@ import {
   Database,
   Search,
 } from 'lucide-react';
-
 import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../firebase';
@@ -40,7 +39,7 @@ const ServicesPage: React.FC = () => {
     name: 'Smart Farm',
     description: 'Investissez dans l’agriculture intelligente durable.',
     image: 'https://via.placeholder.com/400x200.png?text=Smart+Farm',
-    price: 10000,
+    price: 100,
     dailyReturn: 120,
     category: 'agriculture',
     duration: 30,
