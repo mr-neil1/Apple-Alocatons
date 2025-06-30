@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  ArrowLeft
+  ArrowLeft,
   Globe,
   BookOpen,
   HeartPulse,
