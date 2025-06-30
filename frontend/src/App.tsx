@@ -10,7 +10,7 @@ import ServicesPage from './components/services/ServicesPage';
 import ReferralPage from './components/referral/ReferralPage';
 import WithdrawPage from './components/withdraw/WithdrawPage';
 import Navigation from './components/layout/Navigation';
-import History from './components/History/HistoryPage';
+import HistoryPage from './components/History/HistoryPage';
 
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
