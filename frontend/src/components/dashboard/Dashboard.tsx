@@ -25,12 +25,64 @@ const Dashboard: React.FC = () => {
   const [showBalance, setShowBalance] = useState(true);
   const [allocations, setAllocations] = useState<any[]>([]);
 
-  const stats = {
-    dailyEarnings: 250,
-    totalEarnings: 15750,
-    activeAllocations: 8,
-    activeReferrals: 3,
+  const [stats, setStats] = useState({
+  dailyEarnings: 0,
+  totalEarnings: 0,
+  activeAllocations: 0,
+  activeReferrals: 0,
+});
+
+useEffect(() => {
+  if (!user) return;
+
+  const fetchStats = async () => {
+    try {
+      // 1. Allocations actives de l'utilisateur
+      const allocRef = collection(db, 'allocations');
+      const allocQuery = query(allocRef, where('userId', '==', user.uid));
+      const allocSnap = await getDocs(allocQuery);
+
+      let dailyTotal = 0;
+      let totalEarned = 0;
+      let activeCount = 0;
+
+      allocSnap.forEach(doc => {
+        const data = doc.data();
+        totalEarned += data.totalEarned || 0;
+        dailyTotal += data.dailyReturn || 0;
+        if (data.status === 'active') activeCount++;
+      });
+
+      // 2. Filleuls actifs
+      const userRef = collection(db, 'users');
+      const referralQuery = query(userRef, where('referredBy', '==', user.referralCode));
+      const referralSnap = await getDocs(referralQuery);
+
+      let activeReferrals = 0;
+
+      for (const doc of referralSnap.docs) {
+        const refUserId = doc.id;
+        const refAllocSnap = await getDocs(
+          query(allocRef, where('userId', '==', refUserId), where('status', '==', 'active'))
+        );
+        if (!refAllocSnap.empty) activeReferrals++;
+      }
+
+      setStats({
+        dailyEarnings: dailyTotal,
+        totalEarnings: totalEarned,
+        activeAllocations: activeCount,
+        activeReferrals,
+      });
+
+    } catch (error) {
+      console.error('Erreur chargement stats :', error);
+    }
   };
+
+  fetchStats();
+}, [user]);
+
 
   useEffect(() => {
     const fetchAllocations = async () => {
@@ -39,7 +91,7 @@ const Dashboard: React.FC = () => {
       const q = query(
         collection(db, 'allocations'),
         where('userId', '==', user.uid),
-        //orderBy('createdAt', 'desc'),
+        orderBy('createdAt', 'desc'),
         limit(3)
       );
 
