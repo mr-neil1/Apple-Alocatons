@@ -39,7 +39,7 @@ const Dashboard: React.FC = () => {
       const q = query(
         collection(db, 'allocations'),
         where('userId', '==', user.uid),
-        orderBy('createdAt', 'desc'),
+        //orderBy('createdAt', 'desc'),
         limit(3)
       );
 

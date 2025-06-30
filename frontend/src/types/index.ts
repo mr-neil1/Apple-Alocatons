@@ -4,7 +4,7 @@ export interface User {
   balance: number;
   referralCode: string;
   referredBy?: string;
-  createdAt: Date;
+  createdAt: Timestamp;
   isActive: boolean;
 }
 
@@ -14,7 +14,7 @@ export interface Deposit {
   amount: number;
   method: 'mtn' | 'orange' | 'paypal' | 'bitcoin';
   status: 'pending' | 'completed' | 'failed';
-  createdAt: Date;
+  createdAt: Timestamp;
   transactionId?: string;
 }
 
@@ -37,8 +37,8 @@ export interface Allocation {
   amount: number;
   dailyReturn: number;
   totalEarned: number;
-  createdAt: Date;
-  lastPayoutAt: Date;
+  createdAt: Timestamp;
+  lastPayoutAt: Timestamp;
 }
 
 export interface Referral {
@@ -47,7 +47,7 @@ export interface Referral {
   referredId: string;
   referredUser: User;
   bonus: number;
-  createdAt: Date;
+  createdAt: Timestamp;
 }
 
 export interface Withdrawal {
@@ -57,8 +57,8 @@ export interface Withdrawal {
   method: 'mtn' | 'orange' | 'paypal' | 'bitcoin';
   accountInfo: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
-  createdAt: Date;
-  processedAt?: Date;
+  createdAt: Timestamp;
+  processedAt?: Timestamp;
 }
 
 export interface AuthContextType {
