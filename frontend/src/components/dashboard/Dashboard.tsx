@@ -162,52 +162,42 @@ const Dashboard: React.FC = () => {
 
         {/* Transactions */}
         <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Transactions Récentes</h3>
-            <Button
-              onClick={() => navigate('/history')}
-              variant="secondary"
-              size="sm"
-            >
-              Voir tout
-            </Button>
+  <div className="flex items-center justify-between mb-4">
+    <h3 className="text-lg font-semibold text-white">Mes dernières allocations</h3>
+    <Button
+      onClick={() => navigate('/history')}
+      variant="secondary"
+      size="sm"
+    >
+      Voir tout
+    </Button>
+  </div>
+
+  <div className="space-y-3">
+    {allocations.slice(0, 3).map((a) => (
+      <div
+        key={a.id}
+        className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg"
+      >
+        <div className="flex items-center">
+          <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center mr-3">
+            <TrendingUp className="w-4 h-4 text-green-400" />
           </div>
-          
-          <div className="space-y-3">
-            {recentTransactions.map((transaction) => (
-              <div
-                key={transaction.id}
-                className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg"
-              >
-                <div className="flex items-center">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
-                    transaction.type === 'earning' ? 'bg-green-500/20' :
-                    transaction.type === 'deposit' ? 'bg-blue-500/20' : 'bg-orange-500/20'
-                  }`}>
-                    {transaction.type === 'earning' ? (
-                      <TrendingUp className="w-4 h-4 text-green-400" />
-                    ) : transaction.type === 'deposit' ? (
-                      <ArrowDownLeft className="w-4 h-4 text-blue-400" />
-                    ) : (
-                      <ArrowUpRight className="w-4 h-4 text-orange-400" />
-                    )}
-                  </div>
-                  <div>
-                    <div className="text-white font-medium">{transaction.description}</div>
-                    <div className="text-gray-400 text-sm">
-                      {transaction.date.toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-                <div className={`font-semibold ${
-                  transaction.amount > 0 ? 'text-green-400' : 'text-red-400'
-                }`}>
-                  {transaction.amount > 0 ? '+' : ''}{formatCurrency(Math.abs(transaction.amount))}
-                </div>
-              </div>
-            ))}
+          <div>
+            <div className="text-white font-medium">{a.serviceName}</div>
+            <div className="text-gray-400 text-sm">
+              {(a.createdAt?.toDate?.() ?? new Date()).toLocaleDateString()}
+            </div>
           </div>
-        </Card>
+        </div>
+        <div className="text-green-400 font-semibold">
+          +{a.investedAmount.toLocaleString()} XAF
+        </div>
+      </div>
+    ))}
+  </div>
+</Card>
+
       </div>
     </div>
   );
