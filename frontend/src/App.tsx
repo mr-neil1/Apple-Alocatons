@@ -10,6 +10,7 @@ import ServicesPage from './components/services/ServicesPage';
 import ReferralPage from './components/referral/ReferralPage';
 import WithdrawPage from './components/withdraw/WithdrawPage';
 import Navigation from './components/layout/Navigation';
+import History from './components/History/HistoryPage';
 
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
@@ -37,6 +38,7 @@ const AppContent: React.FC = () => {
     <>
       <Routes>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/history" element={<HistoryPage />} />
         <Route path="/deposit" element={<DepositPage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/referral" element={<ReferralPage />} />
