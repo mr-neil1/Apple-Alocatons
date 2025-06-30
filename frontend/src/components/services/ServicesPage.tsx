@@ -19,7 +19,36 @@ const ServicesPage: React.FC = () => {
   const [loadingId, setLoadingId] = useState('');
   const [message, setMessage] = useState('');
 
-  const services: Service[] = [/* ... tes services ... */];
+  const services: Service[] = [const services: Service[] = [
+  {
+    id: '1',
+    name: 'Crypto Pack',
+    description: 'Générez des revenus avec le staking crypto',
+    image: 'https://via.placeholder.com/400x200.png?text=Crypto+Pack',
+    price: 10000,
+    dailyReturn: 500,
+    category: 'crypto',
+  },
+  {
+    id: '2',
+    name: 'Forex Bot',
+    description: 'Investissez dans le trading Forex automatique',
+    image: 'https://via.placeholder.com/400x200.png?text=Forex+Bot',
+    price: 20000,
+    dailyReturn: 1200,
+    category: 'forex',
+  },
+  {
+    id: '3',
+    name: 'Trading Boost',
+    description: 'Profitez de l’analyse technique pour gagner plus',
+    image: 'https://via.placeholder.com/400x200.png?text=Trading+Boost',
+    price: 15000,
+    dailyReturn: 800,
+    category: 'trading',
+  },
+];
+];
 
   const categories = [
     { id: 'all', name: 'Tous', icon: Globe },
