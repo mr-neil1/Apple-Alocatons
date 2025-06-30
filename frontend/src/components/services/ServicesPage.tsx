@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { 
+import {
   ArrowLeft,
   Globe,
   BookOpen,
@@ -11,7 +11,10 @@ import {
   Building2,
   Wrench,
   Lightbulb,
-  DatabaseZap } from 'lucide-react';
+  Database,
+  Search,
+} from 'lucide-react';
+
 import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../firebase';
