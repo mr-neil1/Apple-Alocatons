@@ -1,4 +1,4 @@
-// ReferralPage.tsx (Version améliorée avec bonus dynamiques, gestion du solde, style propre)
+// ReferralPage.tsx (Adapté pour bonus unique de 300 XAF sur premier dépôt uniquement)
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../firebase';
@@ -7,10 +7,12 @@ import {
   query,
   where,
   getDocs,
-  addDoc,
   doc,
+  getDoc,
+  setDoc,
   updateDoc,
   serverTimestamp,
+  orderBy
 } from 'firebase/firestore';
 import { Mail, Copy, CheckCircle, XCircle, PlusCircle } from 'lucide-react';
 import Button from '../ui/Button';
@@ -20,9 +22,8 @@ interface Referral {
   id: string;
   email: string;
   isActive: boolean;
-  investedAmount: number;
-  newBonus: number;
-  alreadyClaimed: number;
+  depositAmount: number;
+  bonusGranted: boolean;
 }
 
 const ReferralPage: React.FC = () => {
@@ -42,49 +43,46 @@ const ReferralPage: React.FC = () => {
     setLoading(true);
     const q = query(collection(db, 'users'), where('referredBy', '==', user.referralCode));
     const userSnaps = await getDocs(q);
-    const bonuses = await getDocs(
-      query(collection(db, 'referralBonuses'), where('userId', '==', user.uid))
-    );
 
-    const claimedMap = new Map();
-    bonuses.docs.forEach((b) => {
-      const data = b.data();
-      claimedMap.set(data.referralId, (claimedMap.get(data.referralId) || 0) + data.bonusAmount);
-    });
-
-    let bonusTotal = 0;
     const referralList: Referral[] = [];
+    let bonusSum = 0;
 
     for (const snap of userSnaps.docs) {
       const data = snap.data();
       const referralId = snap.id;
 
-      const allocSnap = await getDocs(
-        query(collection(db, 'allocations'), where('userId', '==', referralId))
+      // Obtenir les dépôts de ce filleul
+      const depositSnap = await getDocs(
+        query(collection(db, 'deposits'), where('userId', '==', referralId), orderBy('createdAt', 'asc'))
       );
 
-      let invested = 0;
-      allocSnap.docs.forEach((a) => (invested += a.data().investedAmount));
+      const firstDeposit = depositSnap.docs[0];
+      let depositAmount = 0;
+      let bonusGranted = false;
 
-      const alreadyClaimed = claimedMap.get(referralId) || 0;
-      const fixedBonus = 150;
-      const percentBonus = invested * 0.05;
-      const totalBonus = fixedBonus + percentBonus;
-      const newBonus = totalBonus - alreadyClaimed;
-      if (newBonus > 0) bonusTotal += newBonus;
+      if (firstDeposit) {
+        depositAmount = firstDeposit.data().amount || 0;
+        const depositId = firstDeposit.id;
+
+        const bonusDoc = await getDoc(doc(db, 'referralBonuses', depositId));
+        if (bonusDoc.exists()) {
+          bonusGranted = true;
+        } else {
+          bonusSum += 300;
+        }
+      }
 
       referralList.push({
         id: referralId,
         email: data.email,
-        isActive: invested > 0,
-        investedAmount: invested,
-        alreadyClaimed,
-        newBonus,
+        isActive: depositAmount > 0,
+        depositAmount,
+        bonusGranted
       });
     }
 
     setReferrals(referralList);
-    setTotalBonus(bonusTotal);
+    setTotalBonus(bonusSum);
     setLoading(false);
   };
 
@@ -92,16 +90,25 @@ const ReferralPage: React.FC = () => {
     if (!user || totalBonus <= 0) return;
     setClaiming(true);
 
-    const batch = referrals.filter((r) => r.newBonus > 0);
     try {
-      for (const r of batch) {
-        await addDoc(collection(db, 'referralBonuses'), {
-          userId: user.uid,
-          referralId: r.id,
-          bonusAmount: r.newBonus,
-          claimedAt: serverTimestamp(),
-        });
+      for (const r of referrals) {
+        if (!r.bonusGranted && r.depositAmount > 0) {
+          const depositSnap = await getDocs(
+            query(collection(db, 'deposits'), where('userId', '==', r.id), orderBy('createdAt', 'asc'))
+          );
+          const firstDeposit = depositSnap.docs[0];
+          if (!firstDeposit) continue;
+
+          const depositId = firstDeposit.id;
+          await setDoc(doc(db, 'referralBonuses', depositId), {
+            referralId: r.id,
+            depositId,
+            amount: 300,
+            claimedAt: serverTimestamp(),
+          });
+        }
       }
+
       await updateDoc(doc(db, 'users', user.uid), {
         balance: user.balance + totalBonus,
       });
@@ -153,7 +160,7 @@ const ReferralPage: React.FC = () => {
           <Card
             key={r.id}
             className={`p-4 space-y-2 border-l-4 ${
-              r.newBonus > 0 ? 'border-green-500 bg-green-900/10' : 'border-gray-600 bg-gray-800/40'
+              !r.bonusGranted && r.depositAmount > 0 ? 'border-green-500 bg-green-900/10' : 'border-gray-600 bg-gray-800/40'
             }`}
           >
             <div className="flex items-center gap-2 text-sm">
@@ -168,12 +175,12 @@ const ReferralPage: React.FC = () => {
               )}
             </div>
             <div className="text-sm text-gray-300">
-              Dépôts : {r.investedAmount.toLocaleString()} XAF
+              Premier Dépôt : {r.depositAmount.toLocaleString()} XAF
             </div>
-            {r.newBonus > 0 && (
+            {!r.bonusGranted && r.depositAmount > 0 && (
               <div className="text-sm text-green-400">
-                <PlusCircle className="inline-block w-4 h-4 mr-1" /> Nouveau bonus :{' '}
-                <strong>{r.newBonus.toLocaleString()} XAF</strong>
+                <PlusCircle className="inline-block w-4 h-4 mr-1" /> Bonus disponible :{' '}
+                <strong>300 XAF</strong>
               </div>
             )}
           </Card>
@@ -184,3 +191,4 @@ const ReferralPage: React.FC = () => {
 };
 
 export default ReferralPage;
+
