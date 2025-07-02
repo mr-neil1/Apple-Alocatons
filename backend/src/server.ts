@@ -114,18 +114,24 @@ app.post('/api/cinetpay-notify', async (req: Request, res: Response): Promise<vo
       }
 
       const deposit = depositDoc.data();
-      if (deposit?.status !== 'completed') {
-        await depositRef.update({ status: 'completed' });
+      if (!deposit) {
+  res.status(500).json({ error: 'Données de dépôt manquantes' });
+  return;
+}
 
-        const userRef = db.collection('users').doc(deposit.userId);
-        await db.runTransaction(async (t) => {
-          const userDoc = await t.get(userRef);
-          if (!userDoc.exists) return;
+if (deposit.status !== 'completed') {
+  await depositRef.update({ status: 'completed' });
 
-          const currentBalance = userDoc.data()?.balance || 0;
-          t.update(userRef, { balance: currentBalance + deposit.amount });
-        });
-      }
+  const userRef = db.collection('users').doc(deposit.userId);
+  await db.runTransaction(async (t) => {
+    const userDoc = await t.get(userRef);
+    if (!userDoc.exists) return;
+
+    const currentBalance = userDoc.data()?.balance || 0;
+    t.update(userRef, { balance: currentBalance + deposit.amount });
+  });
+}
+
     }
 
     res.status(200).end();
