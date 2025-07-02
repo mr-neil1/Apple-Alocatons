@@ -5,7 +5,7 @@ import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import { auth } from '../firebase';
-
+import axios from 'axios';
 
 const DepositPage: React.FC = () => {
   const navigate = useNavigate();
@@ -60,7 +60,7 @@ const DepositPage: React.FC = () => {
   setLoading(true);
 
   try {
-    const response = await fetch('https://apple-allocations-backend.onrender.com/api/deposit', {
+    const response = await fetch('https://apple-allocatons-backend.onrender.com/api/deposit', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -78,7 +78,13 @@ const DepositPage: React.FC = () => {
     if (!response.ok) throw new Error(data.error || 'Erreur inconnue');
 
     // Redirection vers le lien CinetPay
-    window.location.href = data.paymentLink;
+    if (data?.paymentLink) {
+      
+      window.location.href = data.paymentLink;
+    } else {
+      throw new Error('Lien de paiement non fourni par le backend'); 
+    }
+
 
   } catch (err: any) {
     alert(err.message || 'Erreur lors du dépôt');
