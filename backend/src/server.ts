@@ -12,34 +12,52 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Firebase
+// Firebase Init
 initializeApp({
-  credential: applicationDefault(),
+  credential: applicationDefault()
 });
 const db = getFirestore();
 const auth = getAuth();
 
+// Type personnalisé
+interface AuthenticatedRequest extends Request {
+  user: {
+    uid: string;
+    name?: string;
+    email?: string;
+  };
+}
+
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
-// 🔐 Auth middleware (non typé)
-async function authenticateFirebaseToken(req: Request, res: Response, next: NextFunction) {
+// Auth middleware
+async function authenticateFirebaseToken(req: Request, res: Response, next: NextFunction): Promise<void> {
   const token = req.headers.authorization?.split('Bearer ')[1];
-  if (!token) return res.status(401).json({ error: 'Token requis' });
+  if (!token) {
+    res.status(401).json({ error: 'Token requis' });
+    return;
+  }
 
   try {
     const decoded = await auth.verifyIdToken(token);
-    (req as any).user = decoded;
+    (req as AuthenticatedRequest).user = {
+      uid: decoded.uid,
+      name: decoded.name,
+      email: decoded.email
+    };
     next();
   } catch {
-    return res.status(403).json({ error: 'Token invalide' });
+    res.status(403).json({ error: 'Token invalide' });
   }
 }
 
-// 📤 Dépôt
-app.post('/api/deposit', authenticateFirebaseToken, async (req: Request, res: Response) => {
-  const user = (req as any).user;
+// Dépôt
+app.post('/api/deposit', authenticateFirebaseToken, async (req: Request, res: Response): Promise<void> => {
   const { amount, method, phoneNumber } = req.body;
+  const user = (req as AuthenticatedRequest).user;
+  const userId = user.uid;
 
   const transactionId = `TX-${Date.now()}`;
   const data = {
@@ -54,7 +72,7 @@ app.post('/api/deposit', authenticateFirebaseToken, async (req: Request, res: Re
     customer_name: user.name || '',
     customer_email: user.email || '',
     customer_phone_number: phoneNumber,
-    channels: method,
+    channels: method
   };
 
   try {
@@ -62,13 +80,13 @@ app.post('/api/deposit', authenticateFirebaseToken, async (req: Request, res: Re
     const paymentLink = response.data.data.payment_url;
 
     await db.collection('deposits').doc(transactionId).set({
-      userId: user.uid,
+      userId,
       amount,
       method,
       phoneNumber,
       status: 'pending',
       createdAt: new Date(),
-      transactionId,
+      transactionId
     });
 
     res.json({ message: 'Paiement initié', paymentLink });
@@ -78,8 +96,8 @@ app.post('/api/deposit', authenticateFirebaseToken, async (req: Request, res: Re
   }
 });
 
-// 🔔 Notification CinetPay
-app.post('/api/cinetpay-notify', async (req: Request, res: Response) => {
+// Notification CinetPay
+app.post('/api/cinetpay-notify', async (req: Request, res: Response): Promise<void> => {
   const { transaction_id } = req.body;
 
   try {
@@ -90,10 +108,13 @@ app.post('/api/cinetpay-notify', async (req: Request, res: Response) => {
     if (data.data.status === 'ACCEPTED') {
       const depositRef = db.collection('deposits').doc(transaction_id);
       const depositDoc = await depositRef.get();
-      if (!depositDoc.exists) return res.status(404).end();
+      if (!depositDoc.exists) {
+        res.status(404).end();
+        return;
+      }
 
       const deposit = depositDoc.data();
-      if (deposit && deposit.status !== 'completed' && deposit.userId && deposit.amount) {
+      if (deposit?.status !== 'completed') {
         await depositRef.update({ status: 'completed' });
 
         const userRef = db.collection('users').doc(deposit.userId);
@@ -114,31 +135,47 @@ app.post('/api/cinetpay-notify', async (req: Request, res: Response) => {
   }
 });
 
-// 💸 Retrait
-app.post('/api/withdraw', authenticateFirebaseToken, async (req: Request, res: Response) => {
-  const user = (req as any).user;
+// Retrait
+app.post('/api/withdraw', authenticateFirebaseToken, async (req: Request, res: Response): Promise<void> => {
   const { amount, method, accountInfo } = req.body;
+  const user = (req as AuthenticatedRequest).user;
   const userId = user.uid;
 
-  if (amount < 3000) return res.status(400).json({ error: 'Montant min 3000 XAF' });
+  if (amount < 3000) {
+    res.status(400).json({ error: 'Montant min 3000 XAF' });
+    return;
+  }
 
   const userRef = db.collection('users').doc(userId);
   const userDoc = await userRef.get();
-  if (!userDoc.exists) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+  if (!userDoc.exists) {
+    res.status(404).json({ error: 'Utilisateur non trouvé' });
+    return;
+  }
 
   const userData = userDoc.data();
   const balance = userData?.balance || 0;
-  if (balance < amount) return res.status(400).json({ error: 'Solde insuffisant' });
+  if (balance < amount) {
+    res.status(400).json({ error: 'Solde insuffisant' });
+    return;
+  }
 
-  const referralSnap = await db
-    .collection('users')
+  const referralSnap = await db.collection('users')
     .where('referredBy', '==', userData?.referralCode || '')
     .get();
-  const activeReferrals = referralSnap.docs.filter((doc) => doc.data().isActive).length;
-  if (activeReferrals < 3) return res.status(403).json({ error: 'Minimum 3 filleuls actifs requis' });
+  const activeReferrals = referralSnap.docs.filter(doc => doc.data().isActive).length;
+  if (activeReferrals < 3) {
+    res.status(403).json({ error: 'Minimum 3 filleuls actifs requis' });
+    return;
+  }
 
-  const allocSnap = await db.collection('allocations').where('userId', '==', userId).get();
-  if (allocSnap.empty) return res.status(403).json({ error: 'Aucune allocation active' });
+  const allocSnap = await db.collection('allocations')
+    .where('userId', '==', userId)
+    .get();
+  if (allocSnap.empty) {
+    res.status(403).json({ error: 'Aucune allocation active' });
+    return;
+  }
 
   await db.runTransaction(async (t) => {
     t.update(userRef, { balance: balance - amount });
@@ -148,19 +185,19 @@ app.post('/api/withdraw', authenticateFirebaseToken, async (req: Request, res: R
       method,
       accountInfo,
       createdAt: new Date(),
-      status: 'pending',
+      status: 'pending'
     });
   });
 
   res.json({ message: 'Retrait soumis avec succès' });
 });
 
-// ✅ Santé
-app.get('/api/health', (_, res: Response) => {
+// Santé
+app.get('/api/health', (_req, res: Response): void => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
-// 🕒 CRON: chaque minuit
+// Cron automatique
 cron.schedule('0 0 * * *', async () => {
   console.log('🕒 Mise à jour des gains journaliers...');
   const now = new Date();
@@ -169,22 +206,22 @@ cron.schedule('0 0 * * *', async () => {
   for (const doc of allocationsSnap.docs) {
     const alloc = doc.data();
     const allocId = doc.id;
-
     const { userId, dailyReturn, totalEarned, createdAt, lastPayoutAt, duration } = alloc;
+
     if (!userId || !dailyReturn) continue;
 
-    const last = lastPayoutAt?.toDate?.() || createdAt?.toDate?.();
+    const last = lastPayoutAt?.toDate?.() || createdAt.toDate();
     const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays <= 0) continue;
 
     const gain = dailyReturn * diffDays;
-
     const userRef = db.collection('users').doc(userId);
+
     await userRef.update({ balance: FieldValue.increment(gain) });
 
     const updateData: any = {
       totalEarned: (totalEarned || 0) + gain,
-      lastPayoutAt: Timestamp.fromDate(now),
+      lastPayoutAt: Timestamp.fromDate(now)
     };
 
     if (duration) {
@@ -199,5 +236,5 @@ cron.schedule('0 0 * * *', async () => {
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Backend prêt sur le port ${PORT}`);
+  console.log(`✅ Backend en ligne sur le port ${PORT}`);
 });

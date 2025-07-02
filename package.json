@@ -2,5 +2,8 @@
   "dependencies": {
     "firebase": "^11.9.1",
     "react-router-dom": "^7.6.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
   }
 }
