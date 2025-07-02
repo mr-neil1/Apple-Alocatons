@@ -11,6 +11,9 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 10000;
+app.get('/api/test', (req, res) => {
+  res.json({ message: '✅ Backend opérationnel depuis Render !' });
+});
 app.listen(PORT, () => {
   console.log(`🚀 Serveur backend lancé sur le port ${PORT}`);
 });
