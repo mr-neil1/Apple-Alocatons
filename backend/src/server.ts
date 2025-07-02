@@ -10,7 +10,7 @@ import cron from 'node-cron';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
 app.get('/api/test', (req, res) => {
   res.json({ message: '✅ Backend opérationnel depuis Render !' });
 });
