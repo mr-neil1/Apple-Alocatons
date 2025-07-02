@@ -71,9 +71,10 @@ app.post('/api/deposit', authenticateFirebaseToken, async (req, res) => {
     });
 
     res.json({ message: 'Paiement initié', paymentLink });
-  } catch (error) {
-    console.error('Erreur CinetPay:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Échec de l\'initialisation du dépôt' });
+  } if (error instanceof Error) {
+    console.error(error.message);
+  } else {
+    console.error(error);
   }
 });
 
@@ -104,9 +105,10 @@ app.post('/api/cinetpay-notify', async (req, res) => {
     }
 
     res.status(200).end();
-  } catch (err) {
-    console.error('Notification CinetPay erreur:', err.message);
-    res.status(500).end();
+  } if (error instanceof Error) {
+    console.error(error.message);
+  } else {
+    console.error(error);
   }
 });
 
