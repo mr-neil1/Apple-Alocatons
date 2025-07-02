@@ -6,22 +6,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const axios_1 = __importDefault(require("axios"));
 const app_1 = require("firebase-admin/app");
 const firestore_1 = require("firebase-admin/firestore");
 const auth_1 = require("firebase-admin/auth");
-const axios_1 = __importDefault(require("axios"));
+const node_cron_1 = __importDefault(require("node-cron"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
-app.use((0, cors_1.default)());
-app.use(express_1.default.json());
-// Firebase Admin SDK
+// Firebase
 (0, app_1.initializeApp)({
-    credential: (0, app_1.applicationDefault)()
+    credential: (0, app_1.applicationDefault)(),
 });
 const db = (0, firestore_1.getFirestore)();
 const auth = (0, auth_1.getAuth)();
-// 🔐 Middleware Firebase Auth
+app.use((0, cors_1.default)());
+app.use(express_1.default.json());
+// 🔐 Auth middleware (non typé)
 async function authenticateFirebaseToken(req, res, next) {
     const token = req.headers.authorization?.split('Bearer ')[1];
     if (!token)
@@ -35,10 +36,10 @@ async function authenticateFirebaseToken(req, res, next) {
         return res.status(403).json({ error: 'Token invalide' });
     }
 }
-// 📤 INIT DEPOT
+// 📤 Dépôt
 app.post('/api/deposit', authenticateFirebaseToken, async (req, res) => {
+    const user = req.user;
     const { amount, method, phoneNumber } = req.body;
-    const userId = req.user.uid;
     const transactionId = `TX-${Date.now()}`;
     const data = {
         apikey: process.env.CINETPAY_API_KEY,
@@ -49,31 +50,31 @@ app.post('/api/deposit', authenticateFirebaseToken, async (req, res) => {
         description: 'Dépôt Apple Allocations',
         notify_url: process.env.CINETPAY_NOTIFY_URL,
         return_url: process.env.CINETPAY_RETURN_URL,
-        customer_name: req.user.name || '',
-        customer_email: req.user.email || '',
+        customer_name: user.name || '',
+        customer_email: user.email || '',
         customer_phone_number: phoneNumber,
-        channels: method // 'MOBILE_MONEY'
+        channels: method,
     };
     try {
         const response = await axios_1.default.post('https://api-checkout.cinetpay.com/v2/payment', data);
         const paymentLink = response.data.data.payment_url;
         await db.collection('deposits').doc(transactionId).set({
-            userId,
+            userId: user.uid,
             amount,
             method,
             phoneNumber,
             status: 'pending',
             createdAt: new Date(),
-            transactionId
+            transactionId,
         });
         res.json({ message: 'Paiement initié', paymentLink });
     }
     catch (error) {
-        console.error('Erreur CinetPay:', error.response?.data || error.message);
-        res.status(500).json({ error: 'Échec de l\'initialisation du dépôt' });
+        console.error(error.message);
+        res.status(500).json({ error: 'Erreur CinetPay' });
     }
 });
-// 🔔 NOTIFICATION CINETPAY
+// 🔔 Notification CinetPay
 app.post('/api/cinetpay-notify', async (req, res) => {
     const { transaction_id } = req.body;
     try {
@@ -84,7 +85,7 @@ app.post('/api/cinetpay-notify', async (req, res) => {
             if (!depositDoc.exists)
                 return res.status(404).end();
             const deposit = depositDoc.data();
-            if (deposit?.status !== 'completed') {
+            if (deposit && deposit.status !== 'completed' && deposit.userId && deposit.amount) {
                 await depositRef.update({ status: 'completed' });
                 const userRef = db.collection('users').doc(deposit.userId);
                 await db.runTransaction(async (t) => {
@@ -103,31 +104,29 @@ app.post('/api/cinetpay-notify', async (req, res) => {
         res.status(500).end();
     }
 });
-// 💸 RETRAIT
+// 💸 Retrait
 app.post('/api/withdraw', authenticateFirebaseToken, async (req, res) => {
+    const user = req.user;
     const { amount, method, accountInfo } = req.body;
-    const userId = req.user.uid;
+    const userId = user.uid;
     if (amount < 3000)
         return res.status(400).json({ error: 'Montant min 3000 XAF' });
     const userRef = db.collection('users').doc(userId);
     const userDoc = await userRef.get();
     if (!userDoc.exists)
         return res.status(404).json({ error: 'Utilisateur non trouvé' });
-    const user = userDoc.data();
-    const balance = user?.balance || 0;
+    const userData = userDoc.data();
+    const balance = userData?.balance || 0;
     if (balance < amount)
         return res.status(400).json({ error: 'Solde insuffisant' });
-    // Vérifie 3 filleuls actifs
-    const referralSnap = await db.collection('users')
-        .where('referredBy', '==', user.referralCode)
+    const referralSnap = await db
+        .collection('users')
+        .where('referredBy', '==', userData?.referralCode || '')
         .get();
-    const activeReferrals = referralSnap.docs.filter(doc => doc.data().isActive).length;
+    const activeReferrals = referralSnap.docs.filter((doc) => doc.data().isActive).length;
     if (activeReferrals < 3)
         return res.status(403).json({ error: 'Minimum 3 filleuls actifs requis' });
-    // Vérifie une allocation active
-    const allocSnap = await db.collection('allocations')
-        .where('userId', '==', userId)
-        .get();
+    const allocSnap = await db.collection('allocations').where('userId', '==', userId).get();
     if (allocSnap.empty)
         return res.status(403).json({ error: 'Aucune allocation active' });
     await db.runTransaction(async (t) => {
@@ -138,7 +137,7 @@ app.post('/api/withdraw', authenticateFirebaseToken, async (req, res) => {
             method,
             accountInfo,
             createdAt: new Date(),
-            status: 'pending'
+            status: 'pending',
         });
     });
     res.json({ message: 'Retrait soumis avec succès' });
@@ -147,14 +146,9 @@ app.post('/api/withdraw', authenticateFirebaseToken, async (req, res) => {
 app.get('/api/health', (_, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
 });
-app.listen(PORT, () => {
-    console.log(`✅ Backend prêt sur le port ${PORT}`);
-});
-const node_cron_1 = __importDefault(require("node-cron"));
-const firestore_2 = require("firebase-admin/firestore");
-// 🕒 Tâche CRON : tous les jours à minuit (Africa/Douala)
+// 🕒 CRON: chaque minuit
 node_cron_1.default.schedule('0 0 * * *', async () => {
-    console.log('🕒 Lancement de la mise à jour des gains journaliers...');
+    console.log('🕒 Mise à jour des gains journaliers...');
     const now = new Date();
     const allocationsSnap = await db.collection('allocations').get();
     for (const doc of allocationsSnap.docs) {
@@ -163,31 +157,27 @@ node_cron_1.default.schedule('0 0 * * *', async () => {
         const { userId, dailyReturn, totalEarned, createdAt, lastPayoutAt, duration } = alloc;
         if (!userId || !dailyReturn)
             continue;
-        const last = (lastPayoutAt?.toDate?.() || createdAt?.toDate?.());
+        const last = lastPayoutAt?.toDate?.() || createdAt?.toDate?.();
         const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
         if (diffDays <= 0)
             continue;
         const gain = dailyReturn * diffDays;
-        // 💰 Mettre à jour le solde de l'utilisateur
         const userRef = db.collection('users').doc(userId);
-        await userRef.update({
-            balance: firestore_2.FieldValue.increment(gain)
-        });
-        // 📈 Mettre à jour l'allocation
+        await userRef.update({ balance: firestore_1.FieldValue.increment(gain) });
         const updateData = {
             totalEarned: (totalEarned || 0) + gain,
-            lastPayoutAt: firestore_2.Timestamp.fromDate(now)
+            lastPayoutAt: firestore_1.Timestamp.fromDate(now),
         };
-        // 🛑 Vérifier si la durée est atteinte
         if (duration) {
             const start = createdAt.toDate();
             const end = new Date(start.getTime() + duration * 86400000);
-            if (now >= end) {
+            if (now >= end)
                 updateData.status = 'completed';
-            }
         }
         await db.collection('allocations').doc(allocId).update(updateData);
-        console.log(`✅ Allocation ${allocId} mise à jour pour l'utilisateur ${userId}`);
+        console.log(`✅ Allocation ${allocId} mise à jour pour ${userId}`);
     }
-    console.log('✅ Mise à jour des allocations terminée');
+});
+app.listen(PORT, () => {
+    console.log(`✅ Backend prêt sur le port ${PORT}`);
 });

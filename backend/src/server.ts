@@ -12,44 +12,34 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Firebase Init
+// Firebase
 initializeApp({
-  credential: applicationDefault()
+  credential: applicationDefault(),
 });
 const db = getFirestore();
 const auth = getAuth();
 
-// Types personnalisés
-interface AuthenticatedRequest extends Request {
-  user: {
-    uid: string;
-    name?: string;
-    email?: string;
-  };
-}
-
-// Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Auth middleware
-async function authenticateFirebaseToken(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+// 🔐 Auth middleware (non typé)
+async function authenticateFirebaseToken(req: Request, res: Response, next: NextFunction) {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) return res.status(401).json({ error: 'Token requis' });
 
   try {
     const decoded = await auth.verifyIdToken(token);
-    req.user = decoded;
+    (req as any).user = decoded;
     next();
   } catch {
     return res.status(403).json({ error: 'Token invalide' });
   }
 }
 
-// Dépôt
-app.post('/api/deposit', authenticateFirebaseToken, async (req: AuthenticatedRequest, res: Response) => {
+// 📤 Dépôt
+app.post('/api/deposit', authenticateFirebaseToken, async (req: Request, res: Response) => {
+  const user = (req as any).user;
   const { amount, method, phoneNumber } = req.body;
-  const userId = req.user.uid;
 
   const transactionId = `TX-${Date.now()}`;
   const data = {
@@ -61,10 +51,10 @@ app.post('/api/deposit', authenticateFirebaseToken, async (req: AuthenticatedReq
     description: 'Dépôt Apple Allocations',
     notify_url: process.env.CINETPAY_NOTIFY_URL,
     return_url: process.env.CINETPAY_RETURN_URL,
-    customer_name: req.user.name || '',
-    customer_email: req.user.email || '',
+    customer_name: user.name || '',
+    customer_email: user.email || '',
     customer_phone_number: phoneNumber,
-    channels: method
+    channels: method,
   };
 
   try {
@@ -72,13 +62,13 @@ app.post('/api/deposit', authenticateFirebaseToken, async (req: AuthenticatedReq
     const paymentLink = response.data.data.payment_url;
 
     await db.collection('deposits').doc(transactionId).set({
-      userId,
+      userId: user.uid,
       amount,
       method,
       phoneNumber,
       status: 'pending',
       createdAt: new Date(),
-      transactionId
+      transactionId,
     });
 
     res.json({ message: 'Paiement initié', paymentLink });
@@ -88,7 +78,7 @@ app.post('/api/deposit', authenticateFirebaseToken, async (req: AuthenticatedReq
   }
 });
 
-// Notification CinetPay
+// 🔔 Notification CinetPay
 app.post('/api/cinetpay-notify', async (req: Request, res: Response) => {
   const { transaction_id } = req.body;
 
@@ -103,7 +93,7 @@ app.post('/api/cinetpay-notify', async (req: Request, res: Response) => {
       if (!depositDoc.exists) return res.status(404).end();
 
       const deposit = depositDoc.data();
-      if (deposit?.status !== 'completed') {
+      if (deposit && deposit.status !== 'completed' && deposit.userId && deposit.amount) {
         await depositRef.update({ status: 'completed' });
 
         const userRef = db.collection('users').doc(deposit.userId);
@@ -124,10 +114,11 @@ app.post('/api/cinetpay-notify', async (req: Request, res: Response) => {
   }
 });
 
-// Retrait
-app.post('/api/withdraw', authenticateFirebaseToken, async (req: AuthenticatedRequest, res: Response) => {
+// 💸 Retrait
+app.post('/api/withdraw', authenticateFirebaseToken, async (req: Request, res: Response) => {
+  const user = (req as any).user;
   const { amount, method, accountInfo } = req.body;
-  const userId = req.user.uid;
+  const userId = user.uid;
 
   if (amount < 3000) return res.status(400).json({ error: 'Montant min 3000 XAF' });
 
@@ -135,20 +126,18 @@ app.post('/api/withdraw', authenticateFirebaseToken, async (req: AuthenticatedRe
   const userDoc = await userRef.get();
   if (!userDoc.exists) return res.status(404).json({ error: 'Utilisateur non trouvé' });
 
-  const user = userDoc.data();
-  const balance = user?.balance || 0;
+  const userData = userDoc.data();
+  const balance = userData?.balance || 0;
   if (balance < amount) return res.status(400).json({ error: 'Solde insuffisant' });
 
-  const referralSnap = await db.collection('users')
-    .where('referredBy', '==', user?.referralCode || '')
+  const referralSnap = await db
+    .collection('users')
+    .where('referredBy', '==', userData?.referralCode || '')
     .get();
-
-  const activeReferrals = referralSnap.docs.filter(doc => doc.data().isActive).length;
+  const activeReferrals = referralSnap.docs.filter((doc) => doc.data().isActive).length;
   if (activeReferrals < 3) return res.status(403).json({ error: 'Minimum 3 filleuls actifs requis' });
 
-  const allocSnap = await db.collection('allocations')
-    .where('userId', '==', userId)
-    .get();
+  const allocSnap = await db.collection('allocations').where('userId', '==', userId).get();
   if (allocSnap.empty) return res.status(403).json({ error: 'Aucune allocation active' });
 
   await db.runTransaction(async (t) => {
@@ -159,33 +148,32 @@ app.post('/api/withdraw', authenticateFirebaseToken, async (req: AuthenticatedRe
       method,
       accountInfo,
       createdAt: new Date(),
-      status: 'pending'
+      status: 'pending',
     });
   });
 
   res.json({ message: 'Retrait soumis avec succès' });
 });
 
-// Santé
+// ✅ Santé
 app.get('/api/health', (_, res: Response) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
-// Cron
+// 🕒 CRON: chaque minuit
 cron.schedule('0 0 * * *', async () => {
   console.log('🕒 Mise à jour des gains journaliers...');
-
   const now = new Date();
   const allocationsSnap = await db.collection('allocations').get();
 
   for (const doc of allocationsSnap.docs) {
     const alloc = doc.data();
     const allocId = doc.id;
-    const { userId, dailyReturn, totalEarned, createdAt, lastPayoutAt, duration } = alloc;
 
+    const { userId, dailyReturn, totalEarned, createdAt, lastPayoutAt, duration } = alloc;
     if (!userId || !dailyReturn) continue;
 
-    const last = lastPayoutAt?.toDate?.() || createdAt.toDate();
+    const last = lastPayoutAt?.toDate?.() || createdAt?.toDate?.();
     const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays <= 0) continue;
 
@@ -196,7 +184,7 @@ cron.schedule('0 0 * * *', async () => {
 
     const updateData: any = {
       totalEarned: (totalEarned || 0) + gain,
-      lastPayoutAt: Timestamp.fromDate(now)
+      lastPayoutAt: Timestamp.fromDate(now),
     };
 
     if (duration) {
@@ -211,5 +199,5 @@ cron.schedule('0 0 * * *', async () => {
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Backend en ligne sur le port ${PORT}`);
+  console.log(`✅ Backend prêt sur le port ${PORT}`);
 });
