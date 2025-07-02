@@ -10,7 +10,11 @@ import cron from 'node-cron';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+  console.log(`🚀 Serveur backend lancé sur le port ${PORT}`);
+});
+
 
 // Firebase Init
 initializeApp({
