@@ -135,13 +135,17 @@ app.post('/api/withdraw', authMiddleware, async (req: AuthReq, res: Response) =>
     const allocSnap = await db.collection('allocations').where('userId', '==', req.user.uid).get();
     if (allocSnap.empty) { res.status(403).json({ error: 'Aucune allocation active' }); return; }
 
-    await db.runTransaction(t => {
-      t.update(uref, { balance: FieldValue.increment(-amount) });
-      t.set(db.collection('withdrawals').doc(), {
-        userId: req.user!.uid, amount, method, accountInfo,
-        status: 'pending', createdAt: new Date()
-      });
-    });
+    await db.runTransaction(async (t) => {
+  await t.update(uref, { balance: FieldValue.increment(-amount) });
+  await t.set(db.collection('withdrawals').doc(), {
+    userId: req.user!.uid,
+    amount,
+    method,
+    accountInfo,
+    status: 'pending',
+    createdAt: new Date()
+  });
+});
     res.json({ message: 'Retrait déposé' });
   } catch (err: any) {
     console.error('Withdraw error', err.message);
