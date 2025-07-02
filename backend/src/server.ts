@@ -71,11 +71,14 @@ app.post('/api/deposit', authenticateFirebaseToken, async (req, res) => {
     });
 
     res.json({ message: 'Paiement initié', paymentLink });
-  } if (error instanceof Error) {
+  } 
+  catch (error) {
+  if (error instanceof Error) {
     console.error(error.message);
   } else {
     console.error(error);
   }
+ } 
 });
 
 // 🔔 NOTIFICATION CINETPAY
@@ -105,11 +108,14 @@ app.post('/api/cinetpay-notify', async (req, res) => {
     }
 
     res.status(200).end();
-  } if (error instanceof Error) {
+  } 
+  catch (error) {
+  if (error instanceof Error) {
     console.error(error.message);
   } else {
     console.error(error);
   }
+ }
 });
 
 // 💸 RETRAIT
