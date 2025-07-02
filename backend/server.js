@@ -105,7 +105,7 @@ app.post('/api/auth/register', async (req, res) => {
     res.status(201).json({
       token,
       user: {
-        id: user.id,
+        id: user.uid,
         email: user.email,
         balance: user.balance,
         referralCode: user.referralCode,
@@ -322,8 +322,8 @@ app.post('/api/withdraw', authenticateToken, (req, res) => {
       return res.status(400).json({ error: 'Solde insuffisant' });
     }
 
-    if (amount < 8000) {
-      return res.status(400).json({ error: 'Montant minimum 8000 XAF' });
+    if (amount < 3000) {
+      return res.status(400).json({ error: 'Montant minimum 3000 XAF' });
     }
 
     // Check referral requirement
