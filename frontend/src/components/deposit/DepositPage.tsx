@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
+import { auth } from '../firebase';
+
 
 const DepositPage: React.FC = () => {
   const navigate = useNavigate();
@@ -47,21 +49,44 @@ const DepositPage: React.FC = () => {
   const quickAmounts = [1000, 5000, 10000, 25000, 50000, 100000];
 
   const handleDeposit = async () => {
-    if (!selectedMethod || !amount) return;
+  if (!selectedMethod || !amount || ((selectedMethod === 'mtn' || selectedMethod === 'orange') && !phoneNumber)) {
+    return alert('Veuillez remplir tous les champs requis');
+  }
 
-    setLoading(true);
-    try {
-      // Simuler une requête API
-      await new Promise(resolve => setTimeout(resolve, 2000));
+  const user = auth.currentUser;
+  if (!user) return alert('Veuillez vous connecter');
 
-      alert(`Dépôt de ${amount} XAF via ${selectedMethod} initié avec succès !`);
-      navigate('/');
-    } catch (error) {
-      alert('Erreur lors du dépôt');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const token = await user.getIdToken();
+  setLoading(true);
+
+  try {
+    const response = await fetch('https://apple-allocations-backend.onrender.com/api/deposit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        amount: parseInt(amount),
+        method: selectedMethod.toUpperCase(), // MTN, ORANGE, etc.
+        phoneNumber
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) throw new Error(data.error || 'Erreur inconnue');
+
+    // Redirection vers le lien CinetPay
+    window.location.href = data.paymentLink;
+
+  } catch (err: any) {
+    alert(err.message || 'Erreur lors du dépôt');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gray-900 p-4">
