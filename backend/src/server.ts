@@ -5,6 +5,16 @@ import { initializeApp, applicationDefault } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import axios from 'axios';
+import { Request } from 'express';
+
+interface AuthenticatedRequest extends Request {
+  user: {
+    uid: string;
+    name?: string;
+    email?: string;
+  };
+}
+
 
 dotenv.config();
 
@@ -22,7 +32,7 @@ const db = getFirestore();
 const auth = getAuth();
 
 // 🔐 Middleware Firebase Auth
-async function authenticateFirebaseToken(req: any, res: any, next: any) {
+async function authenticateFirebaseToken(req: AuthenticatedRequest, res: any, next: any) {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) return res.status(401).json({ error: 'Token requis' });
 
@@ -36,7 +46,7 @@ async function authenticateFirebaseToken(req: any, res: any, next: any) {
 }
 
 // 📤 INIT DEPOT
-app.post('/api/deposit', authenticateFirebaseToken, async (req, res) => {
+app.post('/api/deposit', authenticateFirebaseToken, async (req: AuthenticatedRequest, res) => {
   const { amount, method, phoneNumber } = req.body;
   const userId = req.user.uid;
 
@@ -94,7 +104,7 @@ app.post('/api/cinetpay-notify', async (req, res) => {
       if (!depositDoc.exists) return res.status(404).end();
 
       const deposit = depositDoc.data();
-      if (deposit?.status !== 'completed') {
+      if (deposit && deposit.status !== 'completed') {
         await depositRef.update({ status: 'completed' });
         const userRef = db.collection('users').doc(deposit.userId);
         await db.runTransaction(async (t) => {
@@ -119,7 +129,7 @@ app.post('/api/cinetpay-notify', async (req, res) => {
 });
 
 // 💸 RETRAIT
-app.post('/api/withdraw', authenticateFirebaseToken, async (req, res) => {
+app.post('/api/withdraw', authenticateFirebaseToken, async (req: AuthenticatedRequest, res) => {
   const { amount, method, accountInfo } = req.body;
   const userId = req.user.uid;
 
@@ -135,7 +145,7 @@ app.post('/api/withdraw', authenticateFirebaseToken, async (req, res) => {
 
   // Vérifie 3 filleuls actifs
   const referralSnap = await db.collection('users')
-    .where('referredBy', '==', user.referralCode)
+    .where('referredBy', '==', user.referralCode || '')
     .get();
   const activeReferrals = referralSnap.docs.filter(doc => doc.data().isActive).length;
   if (activeReferrals < 3) return res.status(403).json({ error: 'Minimum 3 filleuls actifs requis' });
