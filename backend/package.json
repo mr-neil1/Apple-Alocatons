@@ -2,7 +2,7 @@
   "name": "apple-allocations-backend",
   "version": "1.0.0",
   "description": "Backend API for Apple Allocations Wallet",
-  "type": "module",
+  //"type": "module",
   "main": "dist/server.js",
   "scripts": {
     "dev": "node --watch server.js",
