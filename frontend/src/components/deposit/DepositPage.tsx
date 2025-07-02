@@ -56,42 +56,47 @@ const DepositPage: React.FC = () => {
   const user = auth.currentUser;
   if (!user) return alert('Veuillez vous connecter');
 
-  const token = await user.getIdToken();
   setLoading(true);
-
   try {
+    const token = await user.getIdToken();
+    console.log('Début dépôt');
     const response = await fetch('https://apple-allocatons-backend.onrender.com/api/deposit', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         amount: parseInt(amount),
-        method: selectedMethod.toUpperCase(), // MTN, ORANGE, etc.
-        phoneNumber
-      })
+        method: selectedMethod.toUpperCase(),
+        phoneNumber,
+      }),
     });
 
-    const data = await response.json();
-
-    if (!response.ok) throw new Error(data.error || 'Erreur inconnue');
-
-    // Redirection vers le lien CinetPay
-    if (data?.paymentLink) {
-      
-      window.location.href = data.paymentLink;
-    } else {
-      throw new Error('Lien de paiement non fourni par le backend'); 
+    // Cas erreur réseau (backend KO)
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData?.error || `Erreur HTTP ${response.status}`);
     }
 
+    const data = await response.json();
+    console.log("Réponse backend:", data);
+
+    // Vérifie que paymentLink existe
+    if (data?.paymentLink) {
+      window.location.href = data.paymentLink;
+    } else {
+      throw new Error('Lien de paiement manquant dans la réponse du serveur.');
+    }
 
   } catch (err: any) {
-    alert(err.message || 'Erreur lors du dépôt');
+    console.error("Erreur lors de l'appel API dépôt:", err);
+    alert(err.message || 'Erreur inconnue lors du dépôt.');
   } finally {
     setLoading(false);
   }
 };
+
 
 
   return (
