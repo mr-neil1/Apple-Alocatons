@@ -39,8 +39,17 @@ async function authenticateFirebaseToken(req, res, next) {
 }
 // 📤 Dépôt
 app.post('/api/deposit', authenticateFirebaseToken, async (req, res) => {
-    const user = req.user;
-    const { amount, method, phoneNumber } = req.body;
+  console.log("📩 Nouvelle requête de dépôt reçue");
+
+  const user = req.user;
+  const { amount, method, phoneNumber } = req.body;
+
+  console.log("🔐 Utilisateur:", user.email);
+  console.log("💰 Montant:", amount);
+  console.log("📱 Méthode:", method);
+
+  // reste du code...
+
     const transactionId = `TX-${Date.now()}`;
     const data = {
         apikey: process.env.CINETPAY_API_KEY,
