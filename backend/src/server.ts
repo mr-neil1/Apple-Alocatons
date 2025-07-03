@@ -82,6 +82,8 @@ app.post('/api/deposit', authenticateFirebaseToken, async (req: Request, res: Re
     const response = await axios.post('https://api-checkout.cinetpay.com/v2/payment', payload);
     const paymentLink = response.data.data.payment_url;
 
+    console.log("🎯 Réponse paymentLink envoyée :", paymentLink);
+
     await db.collection('deposits').doc(transactionId).set({
       userId,
       amount,
@@ -92,7 +94,7 @@ app.post('/api/deposit', authenticateFirebaseToken, async (req: Request, res: Re
       transactionId,
     });
 
-    res.json({ paymentLink });
+    res.status(200).json({ paymentLink }); // ✅ C'est ici qu'on envoie la réponse, après avoir tout préparé.
   } catch (err: any) {
     console.error('CinetPay error', err.message);
     res.status(500).json({ error: 'Erreur dépôt' });
