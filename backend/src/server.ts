@@ -93,7 +93,7 @@ app.post('/api/deposit', authenticateFirebaseToken, async (req: Request, res: Re
     });
 
     res.json({ paymentLink });
-  } catch (err: any) {
+    catch (err: any) {
     console.error('CinetPay error', err.message);
     res.status(500).json({ error: 'Erreur dépôt' });
   }
