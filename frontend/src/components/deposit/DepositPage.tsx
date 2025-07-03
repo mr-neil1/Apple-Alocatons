@@ -4,10 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
-import { auth } from '../firebase';
+import { auth } from '../../firebase';
 import axios from 'axios';
 
-const DepositPage: React.FC = () => {
+function DepositPage() {
   const navigate = useNavigate();
 
   const [selectedMethod, setSelectedMethod] = useState<string>('');
@@ -49,53 +49,53 @@ const DepositPage: React.FC = () => {
   const quickAmounts = [1000, 5000, 10000, 25000, 50000, 100000];
 
   const handleDeposit = async () => {
-  if (!selectedMethod || !amount || ((selectedMethod === 'mtn' || selectedMethod === 'orange') && !phoneNumber)) {
-    return alert('Veuillez remplir tous les champs requis');
-  }
-
-  const user = auth.currentUser;
-  if (!user) return alert('Veuillez vous connecter');
-
-  setLoading(true);
-  try {
-    const token = await user.getIdToken();
-    console.log('Début dépôt');
-    const response = await fetch('https://apple-allocatons-backend.onrender.com/api/deposit', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        amount: parseInt(amount),
-        method: selectedMethod.toUpperCase(),
-        phoneNumber,
-      }),
-    });
-
-    // Cas erreur réseau (backend KO)
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData?.error || `Erreur HTTP ${response.status}`);
+    if (!selectedMethod || !amount || ((selectedMethod === 'mtn' || selectedMethod === 'orange') && !phoneNumber)) {
+      return alert('Veuillez remplir tous les champs requis');
     }
 
-    const data = await response.json();
-    console.log("Réponse backend:", data);
+    const user = auth.currentUser;
+    if (!user) return alert('Veuillez vous connecter');
 
-    // Vérifie que paymentLink existe
-    if (data?.paymentLink) {
-      window.location.href = data.paymentLink;
-    } else {
-      throw new Error('Lien de paiement manquant dans la réponse du serveur.');
+    setLoading(true);
+    try {
+      const token = await user.getIdToken();
+      console.log('Début dépôt');
+      const response = await fetch('https://apple-allocatons-backend.onrender.com/api/deposit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          amount: parseInt(amount),
+          method: selectedMethod.toUpperCase(),
+          phoneNumber,
+        }),
+      });
+
+      // Cas erreur réseau (backend KO)
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData?.error || `Erreur HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Réponse backend:", data);
+
+      // Vérifie que paymentLink existe
+      if (data?.paymentLink) {
+        window.location.href = data.paymentLink;
+      } else {
+        throw new Error('Lien de paiement manquant dans la réponse du serveur.');
+      }
+
+    } catch (err: any) {
+      console.error("Erreur lors de l'appel API dépôt:", err);
+      alert(err.message || 'Erreur inconnue lors du dépôt.');
+    } finally {
+      setLoading(false);
     }
-
-  } catch (err: any) {
-    console.error("Erreur lors de l'appel API dépôt:", err);
-    alert(err.message || 'Erreur inconnue lors du dépôt.');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
 
@@ -128,8 +128,7 @@ const DepositPage: React.FC = () => {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="Entrez le montant"
-            icon={Wallet}
-          />
+            icon={Wallet} />
 
           <div className="mt-4">
             <p className="text-sm text-gray-400 mb-3">Montants rapides :</p>
@@ -138,11 +137,9 @@ const DepositPage: React.FC = () => {
                 <button
                   key={quickAmount}
                   onClick={() => setAmount(quickAmount.toString())}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    amount === quickAmount.toString()
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${amount === quickAmount.toString()
                       ? 'bg-primary-500 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
                 >
                   {quickAmount.toLocaleString()}
                 </button>
@@ -159,11 +156,9 @@ const DepositPage: React.FC = () => {
               <div
                 key={method.id}
                 onClick={() => setSelectedMethod(method.id)}
-                className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                  selectedMethod === method.id
+                className={`p-4 rounded-lg border cursor-pointer transition-all ${selectedMethod === method.id
                     ? 'border-primary-500 bg-primary-500/10'
-                    : 'border-gray-600 hover:border-gray-500 bg-gray-700/50'
-                }`}
+                    : 'border-gray-600 hover:border-gray-500 bg-gray-700/50'}`}
               >
                 <div className="flex items-center">
                   <div className={`w-12 h-12 rounded-lg ${method.color} flex items-center justify-center mr-4`}>
@@ -193,8 +188,7 @@ const DepositPage: React.FC = () => {
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               placeholder="6XX XXX XXX"
-              icon={Smartphone}
-            />
+              icon={Smartphone} />
           </Card>
         )}
 
@@ -244,7 +238,7 @@ const DepositPage: React.FC = () => {
             <div>
               <div className="text-blue-400 font-medium mb-1">Information</div>
               <div className="text-sm text-gray-300">
-                Les dépôts sont généralement traités dans les 5-10 minutes. 
+                Les dépôts sont généralement traités dans les 5-10 minutes.
                 Vous recevrez une notification une fois le dépôt confirmé.
               </div>
             </div>
@@ -253,6 +247,6 @@ const DepositPage: React.FC = () => {
       </div>
     </div>
   );
-};
+}
 
 export default DepositPage;
