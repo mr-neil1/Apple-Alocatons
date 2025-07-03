@@ -22,6 +22,7 @@ const db = (0, firestore_1.getFirestore)();
 const auth = (0, auth_1.getAuth)();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
+app.use('/api', require('./src/routes/deposit.routes'));
 // 🔐 Auth middleware (non typé)
 async function authenticateFirebaseToken(req, res, next) {
     const token = req.headers.authorization?.split('Bearer ')[1];

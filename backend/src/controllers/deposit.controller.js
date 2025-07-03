@@ -1,32 +1,45 @@
 // backend/src/controllers/deposit.controller.js
 const { createCinetpayTransaction } = require('../services/cinetpay.service');
+const { db } = require('../firebase');
+const { collection, addDoc } = require('firebase/firestore');
 
-const initiateDeposit = async (req, res) => {
+async function initiateDeposit(req, res) {
+  const { amount, method, phoneNumber } = req.body;
+  const user = req.user;
+
+  if (!user || !amount || !method) {
+    return res.status(400).json({ error: 'Champs manquants ou utilisateur non connecté' });
+  }
+
+  const transaction_id = 'TX-' + Date.now();
+  const email = user.email;
+
   try {
-    const { amount, userId, email } = req.body;
-    const transaction_id = `${userId}_${Date.now()}`;
-
-    const response = await createCinetpayTransaction({
+    const { payment_url } = await createCinetpayTransaction({
       amount,
       transaction_id,
-      customer_email: email
+      customer_email: email,
     });
 
-    // Tu peux stocker la transaction ici dans Firestore ou MongoDB (optionnel)
+    // Sauvegarde dans Firebase
+    await addDoc(collection(db, 'deposits'), {
+      userId: user.uid,
+      amount,
+      method,
+      phoneNumber: phoneNumber || '',
+      transaction_id,
+      status: 'pending',
+      createdAt: new Date(),
+    });
 
-    res.json(response);
+    res.json({ paymentLink: payment_url });
   } catch (err) {
-    console.error('Erreur dépôt :', err);
-    res.status(500).json({ error: 'Erreur lors de la création du paiement' });
+    console.error('❌ Erreur dépôt:', err.message);
+    res.status(500).json({ error: 'Erreur lors du dépôt' });
   }
+}
+
+module.exports = {
+  initiateDeposit,
+  handleNotify,
 };
-
-const handleNotify = (req, res) => {
-  // CinetPay renvoie les infos de paiement ici
-  console.log('Notification reçue :', req.body);
-
-  // ⚠️ Vérifie la validité et mets à jour le solde ici
-  res.status(200).send('OK');
-};
-
-module.exports = { initiateDeposit, handleNotify };
