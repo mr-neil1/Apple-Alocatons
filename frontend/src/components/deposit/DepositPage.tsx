@@ -41,7 +41,7 @@ function DepositPage() {
     }
 
     try {
-      const token = await user.getIdToken();
+      const token = await user.uid();
       console.log('✅ Token Firebase obtenu :', token);
 
       const payload = {
