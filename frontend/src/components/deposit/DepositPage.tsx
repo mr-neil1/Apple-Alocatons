@@ -29,52 +29,46 @@ function DepositPage() {
   }, []);
 
   const handleDeposit = async () => {
-    console.log('🚀 handleDeposit lancé');
-    setLoading(true);
+  console.log('🚀 Simulation de dépôt lancée');
+  setLoading(true);
 
-    const user = auth.currentUser;
-    if (!user) {
-      alert('❌ Vous devez être connecté pour déposer.');
-      console.error('Aucun utilisateur connecté');
+  const user = auth.currentUser;
+  if (!user) {
+    alert('❌ Vous devez être connecté pour déposer.');
+    console.error('Aucun utilisateur connecté');
+    setLoading(false);
+    return;
+  }
+
+  try {
+    // Vérification du montant
+    const depositAmount = parseFloat(amount);
+    if (isNaN(depositAmount) || depositAmount <= 0) {
+      alert('💡 Veuillez entrer un montant valide.');
       setLoading(false);
       return;
     }
 
-    try {
-      const token = await user.uid();
-      console.log('✅ Token Firebase obtenu :', token);
+    // Simulation de l'identité utilisateur (authentification OK)
+    const userId = user.uid;
+    console.log('✅ Utilisateur identifié :', userId);
 
-      const payload = {
-        amount,
-        method: selectedMethod,
-        phoneNumber
-      };
+    // ⚠️ En local : on ne fait pas de requête réseau.
+    // On simule la mise à jour du solde :
+    setBalance((prevBalance) => {
+      const newBalance = prevBalance + depositAmount;
+      console.log(`💰 Solde mis à jour : ${prevBalance} → ${newBalance}`);
+      return newBalance;
+    });
 
-      console.log('📤 Envoi au backend avec :', payload);
-
-      const res = await axios.post(
-        'https://apple-allocatons-backend.onrender.com/api/deposit',
-        payload,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      console.log('📥 Réponse du backend :', res.data);
-
-      const { paymentLink } = res.data;
-      if (paymentLink) {
-        console.log('🔗 Redirection vers le paiement CinetPay...');
-        window.location.href = paymentLink;
-      } else {
-        console.warn('⚠️ Aucune URL de paiement reçue.');
-        alert('Aucun lien de paiement reçu.');
-      }
-    } catch (err: any) {
-      console.error('❌ Erreur dépôt :', err?.response || err);
-      alert('Erreur lors du dépôt.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    alert(`✅ Dépôt simulé de ${depositAmount} XAF effectué avec succès !`);
+  } catch (err) {
+    console.error('❌ Erreur lors de la simulation de dépôt :', err);
+    alert('Une erreur est survenue.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-900 p-4">
